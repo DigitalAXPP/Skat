@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net8.0</TargetFrameworks>
+    <!-- net7.0-ios is not supported on Linux, so we do not add it there. -->
+    <DisableImplicitFSharpCoreReference>true</DisableImplicitFSharpCoreReference>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- Normalize casing -->
+    <AvaloniaPlatform>Desktop</AvaloniaPlatform>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <Folder Include="Shared\" />
+    <Compile Include="shared\SharedTypes.fs" />
+    <Folder Include="Pages\" />
+    <Compile Include="pages\HomePage.fs" />
+    <Compile Include="pages\LoginPage.fs" />
+    <Compile Include="pages\GamePage.fs" />
+    <Compile Include="App.fs" />
+    <Compile Include="$(DesktopPlatformFolder)Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Properties\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.0.7" />
+    <PackageReference Include="FSharp.Core" Version="8.0.100" />
+    <PackageReference Include="Fabulous" Version="2.4.0" />
+    <PackageReference Include="Fabulous.Avalonia" Version="2.4.0" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.0.7" />
+  </ItemGroup>
+  <ItemGroup />
+</Project>
