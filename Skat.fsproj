@@ -11,6 +11,7 @@
   </PropertyGroup>
   
   <ItemGroup>
+    <Folder Include="Resources\Images\" />
     <Folder Include="Shared\" />
     <Compile Include="shared\SharedTypes.fs" />
     <Folder Include="Pages\" />
@@ -22,6 +23,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Properties\**" />
+    <AvaloniaResource Include="Resources\Images\**"/>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.0.7" />

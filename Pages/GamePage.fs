@@ -23,4 +23,7 @@ let view model =
         TextBlock($"Third Page: {model.Name}")
         //Button("Go to Page 3", fun _ -> dispatch (App.NavigateTo SharedTypes.HomePage))
         Button("Go to Home Page", NextHomePage)
+        Image(getImageUri "clubs_nine.png")
+            .height(200.)
+            .centerHorizontal()
     }

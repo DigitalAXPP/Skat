@@ -23,3 +23,7 @@ type Intent =
     | GoToHomePage
     /// No navigation action is required.
     | NoIntent
+
+let getImageUri (imageName : string) =
+    // Return the URI string for the embedded image resource
+    $"avares://skat/Resources/Images/{imageName}"
