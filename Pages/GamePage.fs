@@ -26,4 +26,24 @@ let view model =
         Image(getImageUri "clubs_nine.png")
             .height(200.)
             .centerHorizontal()
+        let items = ["clubs_eight.png"; "clubs_ace.png"]
+        ListBox(items, fun item ->
+            ListBoxItem(
+                Image(getImageUri item)
+                    .height(100.)
+                    .centerHorizontal()
+            )
+        )
+        //ListBox() {
+        //    ListBoxItem(
+        //        Image(getImageUri "clubs_eight.png")
+        //            .height(100.)
+        //            .centerHorizontal()
+        //    )
+        //    ListBoxItem(
+        //        Image(getImageUri "clubs_seven.png")
+        //            .height(100.)
+        //            .centerHorizontal()
+        //    )
+        //}
     }
