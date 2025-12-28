@@ -17,6 +17,7 @@ type Msg =
     | NextGamePage
     | HubMsg of GameHub.Msg
     | ConnectHub
+    | NewGame of string
 
 let init = 
     let hubModel, hubCmd = GameHub.init()
@@ -41,23 +42,37 @@ let update msg model =
                         let serverDispatcher (serverMsg: ServerMsg) =
                             dispatch (HubMsg (GameHub.mapServerMsg serverMsg))
 
-                        // Connect SignalR
-                        let! hub =
-                            connect "http://localhost:5000/gamehub" serverDispatcher
-                            |> Async.AwaitTask
+                        try
+                            // Connect SignalR
+                            let! hub =
+                                connect "http://localhost:5109/gamehub" serverDispatcher
+                                |> Async.AwaitTask
 
-                        // Notify Elmish that the connection was successful
-                        dispatch (HubMsg (GameHub.ConnectedHub hub))
+                            // Notify Elmish that the connection was successful
+                            dispatch (HubMsg (GameHub.ConnectedHub hub))
+                        with exn ->
+                            // Notify Elmish that the connection failed
+                            dispatch (HubMsg (GameHub.ConnectionHubFailed exn.Message))
                     }
                     |> Async.StartImmediate
                 )
             model, cmd, NoIntent
+    | NewGame gameName ->
+        let cmd =
+            Cmd.ofSub (fun dispatch ->
+                async {
+                    dispatch (HubMsg (GameHub.EnterGame gameName))
+                }
+                |> Async.StartImmediate
+            )
+        model, cmd, NoIntent
 
 let view model =
     VStack() {
         TextBlock($"Second Page: {model.Name}")
         TextBlock($"Hub status: {model.Hub.Status}")
         Button("Connect to hub.", ConnectHub)
+        Button("Start New Game", NewGame "Alex")
         //Button("Go to Page 3", fun _ -> dispatch (App.NavigateTo SharedTypes.GamePage))
         Button("Go to Game Page", NextGamePage)
     }
