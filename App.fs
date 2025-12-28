@@ -43,11 +43,19 @@ module App =
     //    | NavigateTo of Page
 
     let init () =
+        let loginModel, loginCmd = LoginPage.init
+        let homeModel, homeCmd = HomePage.init
+        let gameModel, gameCmd = GamePage.init
         {
             CurrentPage = PageHome
-            Home = HomePage.init
-            Login = LoginPage.init
-            Game = GamePage.init}, Cmd.none
+            Home = homeModel
+            Login = loginModel
+            Game = gameModel}, 
+            Cmd.batch [
+                Cmd.map LoginMsg loginCmd
+                Cmd.map HomeMsg homeCmd
+                Cmd.map GameMsg gameCmd
+            ]
 
     //let initModel = 
     //    {
@@ -78,23 +86,23 @@ module App =
             let updated, cmd, intention = HomePage.update m model.Home
             match intention with
             | GoToLoginPage ->
-                { model with CurrentPage = PageLogin; Home = updated }, cmd
+                { model with CurrentPage = PageLogin; Home = updated }, Cmd.map HomeMsg cmd
             | _ ->
-                { model with Home = updated }, cmd
+                { model with Home = updated }, Cmd.map HomeMsg cmd
 
         | LoginMsg m ->
             let updated, cmd, intention = LoginPage.update m model.Login
             match intention with
             | GoToGamePage ->
-                { model with CurrentPage = PageGame; Login = updated }, cmd
-            | _ -> { model with Login = updated }, cmd
+                { model with CurrentPage = PageGame; Login = updated }, Cmd.map LoginMsg cmd
+            | _ -> { model with Login = updated }, Cmd.map LoginMsg cmd
 
         | GameMsg m ->
             let updated, cmd, intention = GamePage.update m model.Game
             match intention with
             | GoToHomePage ->
-                { model with CurrentPage = PageHome; Game = updated }, cmd
-            | _ -> { model with Game = updated }, cmd
+                { model with CurrentPage = PageHome; Game = updated }, Cmd.map GameMsg cmd
+            | _ -> { model with Game = updated }, Cmd.map GameMsg cmd
 
     //let update msg model =
     //    match msg with

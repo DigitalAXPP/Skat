@@ -11,7 +11,7 @@ type Msg =
     | DoSomething
     | NextLoginPage
 
-let init = { Something = 0 }
+let init = { Something = 0 }, Cmd.none
 
 let update msg model =
     match msg with

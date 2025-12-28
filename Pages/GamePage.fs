@@ -11,7 +11,7 @@ type Msg =
     | ChangeName of string
     | NextHomePage
 
-let init = { Name = "Hi 3rd Page" }
+let init = { Name = "Hi 3rd Page" }, Cmd.none
 
 let update msg model =
     match msg with

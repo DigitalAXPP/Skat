@@ -12,6 +12,8 @@
   
   <ItemGroup>
     <Folder Include="Resources\Images\" />
+    <Compile Include="SignalRClient.fs" />
+    <Compile Include="GameHub.fs" />
     <Folder Include="Shared\" />
     <Compile Include="shared\SharedTypes.fs" />
     <Folder Include="Pages\" />
@@ -23,7 +25,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Properties\**" />
-    <AvaloniaResource Include="Resources\Images\**"/>
+    <AvaloniaResource Include="Resources\Images\**" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.0.7" />
@@ -31,6 +33,6 @@
     <PackageReference Include="Fabulous" Version="2.4.0" />
     <PackageReference Include="Fabulous.Avalonia" Version="2.4.0" />
     <PackageReference Include="Avalonia.Desktop" Version="11.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.1" />
   </ItemGroup>
-  <ItemGroup />
 </Project>

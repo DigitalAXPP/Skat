@@ -4,23 +4,60 @@ open Fabulous.Avalonia
 open type Fabulous.Avalonia.View
 open Fabulous
 open SharedTypes
+open SignalRClient
+open Fabulous.Dispatcher
 
-type Model = { Name: string }
+type Model = { 
+    Name: string
+    Hub: GameHub.Model
+}
 
 type Msg =
     | ChangeName of string
     | NextGamePage
+    | HubMsg of GameHub.Msg
+    | ConnectHub
 
-let init = { Name = "Hi" }
+let init = 
+    let hubModel, hubCmd = GameHub.init()
+    { 
+        Name = "Hi"
+        Hub = hubModel
+    }, Cmd.map HubMsg hubCmd
 
 let update msg model =
     match msg with
     | ChangeName n -> { model with Name = n }, Cmd.none, NoIntent
     | NextGamePage -> model, Cmd.none, GoToGamePage
+    | HubMsg hubMsg ->
+        // You could delegate updates to GameHub.update if you have one
+        let newHub, hubCmd = GameHub.update hubMsg model.Hub
+        { model with Hub = newHub }, Cmd.map HubMsg hubCmd, NoIntent
+    | ConnectHub ->
+            let cmd =
+                Cmd.ofSub (fun dispatch ->
+                    async {
+                        // This dispatcher is called by SignalR
+                        let serverDispatcher (serverMsg: ServerMsg) =
+                            dispatch (HubMsg (GameHub.mapServerMsg serverMsg))
+
+                        // Connect SignalR
+                        let! hub =
+                            connect "http://localhost:5000/gamehub" serverDispatcher
+                            |> Async.AwaitTask
+
+                        // Notify Elmish that the connection was successful
+                        dispatch (HubMsg (GameHub.ConnectedHub hub))
+                    }
+                    |> Async.StartImmediate
+                )
+            model, cmd, NoIntent
 
 let view model =
     VStack() {
         TextBlock($"Second Page: {model.Name}")
+        TextBlock($"Hub status: {model.Hub.Status}")
+        Button("Connect to hub.", ConnectHub)
         //Button("Go to Page 3", fun _ -> dispatch (App.NavigateTo SharedTypes.GamePage))
         Button("Go to Game Page", NextGamePage)
     }
