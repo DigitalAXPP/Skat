@@ -35,8 +35,8 @@ let init() = {
 
 let update msg model =
     match msg, model.Connection with
-    | GameJoined, _ -> {model with Status = "Game Joined"}, Cmd.none
-    | GameQuit, _ -> {model with Status = "Game quit"}, Cmd.none
+    | GameJoined, _ -> {model with Status = "Connected"}, Cmd.none
+    | GameQuit, _ -> {model with Status = "Disconnected"}, Cmd.none
     //| ConnectHub, _ ->
     //    let cmd = 
     //        Cmd.ofAsyncMsg (async {
@@ -94,7 +94,17 @@ let update msg model =
             model, cmd
 
     | MoveReceiving move, _ ->
-        { model with Moves = move :: model.Moves }, Cmd.none
+        match model.Connection with
+        | HubConnected hub -> 
+            let cmd =
+                Cmd.ofAsyncMsg (async {
+                    try
+                        do! hub.InvokeAsync("SendMove", move) |> Async.AwaitTask
+                        return GameJoined
+                    with exn ->
+                        return ConnectionHubFailed exn.Message
+                })
+            { model with Moves = move :: model.Moves }, cmd
 
     | SendMove move, HubConnected hub ->
         let cmd =

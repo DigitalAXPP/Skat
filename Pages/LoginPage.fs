@@ -71,8 +71,11 @@ let view model =
     VStack() {
         TextBlock($"Second Page: {model.Name}")
         TextBlock($"Hub status: {model.Hub.Status}")
+        TextBlock($"Moves: {model.Hub.Moves}")
         Button("Connect to hub.", ConnectHub)
-        Button("Start New Game", NewGame "Alex")
+        TextBox(model.Name, ChangeName)
+        Button("Start New Game", HubMsg (GameHub.EnterGame model.Name))
+        Button("Add move", HubMsg (GameHub.MoveReceiving "left"))
         //Button("Go to Page 3", fun _ -> dispatch (App.NavigateTo SharedTypes.GamePage))
         Button("Go to Game Page", NextGamePage)
     }

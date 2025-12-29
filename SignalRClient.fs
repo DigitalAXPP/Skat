@@ -21,7 +21,7 @@ let connect (hubUrl : string) (dispatch : ServerMsg -> unit) =
                 .Build()
 
         hub.On<string>("ReceiveMove", fun move ->
-            dispatch (MoveReceiving move)) |> ignore
+            printf "New move: %s" move) |> ignore
 
         hub.On<string seq>("PlayersUpdate", fun players ->
             printf "Players updated: %A" (players |> Seq.toList)) |> ignore
