@@ -75,6 +75,7 @@ let view model =
         Button("Connect to hub.", ConnectHub)
         TextBox(model.Name, ChangeName)
         Button("Start New Game", HubMsg (GameHub.EnterGame model.Name))
+        Button("Quit New Game", HubMsg (GameHub.LeaveGame model.Name))
         Button("Add move", HubMsg (GameHub.MoveReceiving "left"))
         //Button("Go to Page 3", fun _ -> dispatch (App.NavigateTo SharedTypes.GamePage))
         Button("Go to Game Page", NextGamePage)

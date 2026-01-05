@@ -7,6 +7,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Skat", "Skat.fsproj", "{8C8
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Skat.SignalR", "Skat.SignalR\Skat.SignalR.fsproj", "{916BF395-CD6B-46CD-927F-93FDFE89EF00}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Skat.Game", "Skat.Game\Skat.Game.fsproj", "{559C029C-EE13-4431-92B6-233823347FDD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,6 +45,18 @@ Global
 		{916BF395-CD6B-46CD-927F-93FDFE89EF00}.Release|x64.Build.0 = Release|Any CPU
 		{916BF395-CD6B-46CD-927F-93FDFE89EF00}.Release|x86.ActiveCfg = Release|Any CPU
 		{916BF395-CD6B-46CD-927F-93FDFE89EF00}.Release|x86.Build.0 = Release|Any CPU
+		{559C029C-EE13-4431-92B6-233823347FDD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{559C029C-EE13-4431-92B6-233823347FDD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{559C029C-EE13-4431-92B6-233823347FDD}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{559C029C-EE13-4431-92B6-233823347FDD}.Debug|x64.Build.0 = Debug|Any CPU
+		{559C029C-EE13-4431-92B6-233823347FDD}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{559C029C-EE13-4431-92B6-233823347FDD}.Debug|x86.Build.0 = Debug|Any CPU
+		{559C029C-EE13-4431-92B6-233823347FDD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{559C029C-EE13-4431-92B6-233823347FDD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{559C029C-EE13-4431-92B6-233823347FDD}.Release|x64.ActiveCfg = Release|Any CPU
+		{559C029C-EE13-4431-92B6-233823347FDD}.Release|x64.Build.0 = Release|Any CPU
+		{559C029C-EE13-4431-92B6-233823347FDD}.Release|x86.ActiveCfg = Release|Any CPU
+		{559C029C-EE13-4431-92B6-233823347FDD}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

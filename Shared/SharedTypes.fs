@@ -24,6 +24,11 @@ type Intent =
     /// No navigation action is required.
     | NoIntent
 
+type ConnectionStatus =
+    | Disconnected
+    | Connecting
+    | Connected
+
 let getImageUri (imageName : string) =
     // Return the URI string for the embedded image resource
     $"avares://skat/Resources/Images/{imageName}"

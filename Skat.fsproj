@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
     <TargetFrameworks>net8.0</TargetFrameworks>
     <!-- net7.0-ios is not supported on Linux, so we do not add it there. -->
-    <DisableImplicitFSharpCoreReference>true</DisableImplicitFSharpCoreReference>
+    <!--<DisableImplicitFSharpCoreReference>true</DisableImplicitFSharpCoreReference>-->
   </PropertyGroup>
   <PropertyGroup>
     <!-- Normalize casing -->
@@ -12,10 +12,10 @@
   
   <ItemGroup>
     <Folder Include="Resources\Images\" />
-    <Compile Include="SignalRClient.fs" />
-    <Compile Include="GameHub.fs" />
     <Folder Include="Shared\" />
     <Compile Include="shared\SharedTypes.fs" />
+    <Compile Include="SignalRClient.fs" />
+    <Compile Include="GameHub.fs" />
     <Folder Include="Pages\" />
     <Compile Include="pages\HomePage.fs" />
     <Compile Include="pages\LoginPage.fs" />
@@ -29,10 +29,13 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.0.7" />
-    <PackageReference Include="FSharp.Core" Version="8.0.100" />
+    <!--<PackageReference Include="FSharp.Core" Version="8.0.100" />-->
     <PackageReference Include="Fabulous" Version="2.4.0" />
     <PackageReference Include="Fabulous.Avalonia" Version="2.4.0" />
     <PackageReference Include="Avalonia.Desktop" Version="11.0.7" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="Skat.Game\Skat.Game.fsproj" />
   </ItemGroup>
 </Project>

@@ -18,7 +18,7 @@ let update msg model =
     | DoSomething -> { model with Something = model.Something + 1 }, Cmd.none, NoIntent
     | NextLoginPage -> model, Cmd.none, GoToLoginPage
 
-let view model = //(dispatch: Msg -> unit) =
+let view model =
     VStack() {
         TextBlock($"First Page: %d{model.Something}")
         //Button("Do something", fun _ -> dispatch DoSomething)

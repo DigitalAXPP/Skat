@@ -4,6 +4,7 @@ open System.Threading.Tasks
 open SignalRClient
 open Microsoft.AspNetCore.SignalR.Client
 open Fabulous
+open SharedTypes
 
 type Model = { 
     Status: string
@@ -29,25 +30,14 @@ let mapServerMsg msg =
     | ServerMsg.MoveReceiving move -> MoveReceiving move
 
 let init() = {
-    Status = "Not connected"
+    Status = Disconnected.ToString()
     Moves = []
     Connection = HubDisconnected}, Cmd.none
 
 let update msg model =
     match msg, model.Connection with
-    | GameJoined, _ -> {model with Status = "Connected"}, Cmd.none
-    | GameQuit, _ -> {model with Status = "Disconnected"}, Cmd.none
-    //| ConnectHub, _ ->
-    //    let cmd = 
-    //        Cmd.ofAsyncMsg (async {
-    //            try
-    //                let! hub = connect "http://localhost:5000/gamehub" ignore |> Async.AwaitTask
-    //                return ConnectedHub hub
-    //            with exn ->
-    //                return ConnectionHubFailed exn.Message
-    //        })
-                
-    //    { model with Status = "Connecting..." }, cmd
+    | GameJoined, _ -> {model with Status = Connected.ToString()}, Cmd.none
+    | GameQuit, _ -> {model with Status = Disconnected.ToString()}, Cmd.none
 
     | DisconnectHub, _ ->
         match model.Connection with
@@ -58,11 +48,11 @@ let update msg model =
                     return HubDisconnected 
                 })
                 
-            { model with Status = "Disconnected"; Connection = HubDisconnected }, Cmd.none
+            { model with Status = Disconnected.ToString(); Connection = HubDisconnected }, Cmd.none
 
     | ConnectedHub hub, _ ->
         { model with
-            Status = "Connected"
+            Status = Connected.ToString()
             Connection = HubConnected hub },
         Cmd.none
 
@@ -105,17 +95,6 @@ let update msg model =
                         return ConnectionHubFailed exn.Message
                 })
             { model with Moves = move :: model.Moves }, cmd
-
-    | SendMove move, HubConnected hub ->
-        let cmd =
-            Cmd.ofAsyncMsg (async {
-                try
-                    do! hub.InvokeAsync("SendMove", move) |> Async.AwaitTask
-                    return ConnectedHub hub
-                with exn ->
-                    return ConnectionHubFailed exn.Message
-            })
-        { model with Status = $"Sent: {move}" }, cmd
 
     | ConnectionHubFailed err, _ ->
         { model with Status = $"Connection failed: {err}" }, Cmd.none

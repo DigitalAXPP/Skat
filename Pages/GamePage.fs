@@ -4,14 +4,19 @@ open Fabulous.Avalonia
 open type Fabulous.Avalonia.View
 open Fabulous
 open SharedTypes
+open Skat.Game.Types
+open Skat.Game.Functions
 
-type Model = { Name: string }
+type Model = { 
+    Name: string
+    CardSelected: Card option
+}
 
 type Msg =
     | ChangeName of string
     | NextHomePage
 
-let init = { Name = "Hi 3rd Page" }, Cmd.none
+let init = { Name = "Hi 3rd Page"; CardSelected = None }, Cmd.none
 
 let update msg model =
     match msg with
@@ -19,21 +24,23 @@ let update msg model =
     | NextHomePage -> model, Cmd.none, GoToHomePage
 
 let view model =
-    VStack() {
-        TextBlock($"Third Page: {model.Name}")
-        //Button("Go to Page 3", fun _ -> dispatch (App.NavigateTo SharedTypes.HomePage))
-        Button("Go to Home Page", NextHomePage)
-        Image(getImageUri "clubs_nine.png")
-            .height(200.)
-            .centerHorizontal()
-        let items = ["clubs_eight.png"; "clubs_ace.png"]
-        ListBox(items, fun item ->
-            ListBoxItem(
-                Image(getImageUri item)
-                    .height(100.)
-                    .centerHorizontal()
+        VStack(spacing = 25.) {
+            TextBlock($"Third Page: {model.Name}")
+            //Button("Go to Page 3", fun _ -> dispatch (App.NavigateTo SharedTypes.HomePage))
+            Button("Go to Home Page", NextHomePage)
+            Image(getImageUri (cardToImageName { Suite = Clubs; Rank = King}))
+                .height(200.)
+                .centerHorizontal()
+            let items = Deck
+            ListBox(items, fun item ->
+                ListBoxItem(
+                    Image(getImageUri (cardToImageName item))
+                        .height(15.)
+                        .centerHorizontal()
+                        .onTapped(fun _ -> ChangeName (sprintf "%A" item))
+                )
             )
-        )
+        
         //ListBox() {
         //    ListBoxItem(
         //        Image(getImageUri "clubs_eight.png")
