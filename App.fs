@@ -6,6 +6,7 @@ open Fabulous.Avalonia
 
 open type Fabulous.Avalonia.View
 open SharedTypes
+open SignalRClient
 
 module App =
     //type Page =
@@ -19,6 +20,7 @@ module App =
             Home: HomePage.Model
             Login: LoginPage.Model
             Game: GamePage.Model
+            HubService: HubService option
         }
     //type Model =
     //    { 
@@ -33,6 +35,7 @@ module App =
         | HomeMsg of HomePage.Msg
         | LoginMsg of LoginPage.Msg
         | GameMsg of GamePage.Msg
+        | HubServiceMsg of HubService
     //type Msg =
     //    | Increment
     //    | Decrement
@@ -42,16 +45,34 @@ module App =
     //    | TimedTick
     //    | NavigateTo of Page
 
+    //let init hubService () =
     let init () =
-        let loginModel, loginCmd = LoginPage.init
+        let hubServiceCmd = 
+            Cmd.ofSub (fun dispatch ->
+                let hub =
+                    HubService(
+                        "http://localhost:5109/gamehub",
+                        fun serverMsg ->
+                            dispatch (LoginMsg (LoginPage.HubMsg (GameHub.ServerMsg serverMsg)))
+                    )
+                dispatch (HubServiceMsg hub)
+                )
+            //HubService(
+            //    "http://localhost:5109/gamehub",
+            //    fun _ -> ()
+            //)
+        let loginModel, loginCmd = LoginPage.init ()
         let homeModel, homeCmd = HomePage.init
         let gameModel, gameCmd = GamePage.init
         {
             CurrentPage = PageHome
             Home = homeModel
             Login = loginModel
-            Game = gameModel}, 
+            Game = gameModel
+            HubService = None
+        }, 
             Cmd.batch [
+                hubServiceCmd
                 Cmd.map LoginMsg loginCmd
                 Cmd.map HomeMsg homeCmd
                 Cmd.map GameMsg gameCmd
@@ -74,12 +95,15 @@ module App =
 
     //let init () = initModel, Cmd.none
 
+    //let update hubService msg model =
     let update msg model =
         match msg with
         //match model.CurrentPage with
         //| PageHome -> HomePage.view model.Home
         //| PageLogin -> LoginPage.view model.Login
         //| PageGame -> GamePage.view model.Game
+        | HubServiceMsg hub ->
+            { model with HubService = Some hub }, Cmd.none
         | NavigateToPage p -> { model with CurrentPage = p }, Cmd.none
 
         | HomeMsg m ->
@@ -91,11 +115,21 @@ module App =
                 { model with Home = updated }, Cmd.map HomeMsg cmd
 
         | LoginMsg m ->
-            let updated, cmd, intention = LoginPage.update m model.Login
-            match intention with
-            | GoToGamePage ->
-                { model with CurrentPage = PageGame; Login = updated }, Cmd.map LoginMsg cmd
-            | _ -> { model with Login = updated }, Cmd.map LoginMsg cmd
+            match model.HubService with
+            | Some hub ->
+                let updated, cmd, intention =
+                    LoginPage.update hub m model.Login
+                match intention with
+                | GoToGamePage ->
+                    { model with CurrentPage = PageGame; Login = updated }, Cmd.map LoginMsg cmd
+                | _ -> { model with Login = updated }, Cmd.map LoginMsg cmd
+            | None ->
+                model, Cmd.none
+            //let updated, cmd, intention = LoginPage.update model.HubService m model.Login
+            //match intention with
+            //| GoToGamePage ->
+            //    { model with CurrentPage = PageGame; Login = updated }, Cmd.map LoginMsg cmd
+            //| _ -> { model with Login = updated }, Cmd.map LoginMsg cmd
 
         | GameMsg m ->
             let updated, cmd, intention = GamePage.update m model.Game
@@ -198,3 +232,11 @@ module App =
     let theme = FluentTheme()
 
     let program = Program.statefulWithCmd init update view //app
+    //let program hubService = 
+    //            Program.statefulWithCmd
+    //                //(fun () -> init hubService)
+    //                //(update hubService)
+    //                //view
+    //                (init hubService)      // unit -> Model * Cmd<Msg>
+    //                (update hubService)    // Msg -> Model -> Model * Cmd<Msg>
+    //                view

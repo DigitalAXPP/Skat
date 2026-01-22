@@ -19,43 +19,45 @@ type Msg =
     | ConnectHub
     | NewGame of string
 
-let init = 
+//let init (_hubService: HubService) = 
+let init () =
     let hubModel, hubCmd = GameHub.init()
     { 
         Name = "Hi"
         Hub = hubModel
     }, Cmd.map HubMsg hubCmd
 
-let update msg model =
+let update (hubService: HubService) msg model =
     match msg with
     | ChangeName n -> { model with Name = n }, Cmd.none, NoIntent
     | NextGamePage -> model, Cmd.none, GoToGamePage
     | HubMsg hubMsg ->
         // You could delegate updates to GameHub.update if you have one
-        let newHub, hubCmd = GameHub.update hubMsg model.Hub
+        let newHub, hubCmd = GameHub.update hubService hubMsg model.Hub
         { model with Hub = newHub }, Cmd.map HubMsg hubCmd, NoIntent
     | ConnectHub ->
             let cmd =
-                Cmd.ofSub (fun dispatch ->
-                    async {
-                        // This dispatcher is called by SignalR
-                        let serverDispatcher (serverMsg: ServerMsg) =
-                            dispatch (HubMsg (GameHub.mapServerMsg serverMsg))
+                //Cmd.ofSub (fun dispatch ->
+                //    async {
+                //        // This dispatcher is called by SignalR
+                //        let serverDispatcher (serverMsg: ServerMsg) =
+                //            dispatch (HubMsg (GameHub.mapServerMsg serverMsg))
 
-                        try
-                            // Connect SignalR
-                            let! hub =
-                                connect "http://localhost:5109/gamehub" serverDispatcher
-                                |> Async.AwaitTask
+                //        try
+                //            // Connect SignalR
+                //            let! hub =
+                //                connect "http://localhost:5109/gamehub" serverDispatcher
+                //                |> Async.AwaitTask
 
-                            // Notify Elmish that the connection was successful
-                            dispatch (HubMsg (GameHub.ConnectedHub hub))
-                        with exn ->
-                            // Notify Elmish that the connection failed
-                            dispatch (HubMsg (GameHub.ConnectionHubFailed exn.Message))
-                    }
-                    |> Async.StartImmediate
-                )
+                //            // Notify Elmish that the connection was successful
+                //            dispatch (HubMsg (GameHub.ConnectedHub hub))
+                //        with exn ->
+                //            // Notify Elmish that the connection failed
+                //            dispatch (HubMsg (GameHub.ConnectionHubFailed exn.Message))
+                //    }
+                //    |> Async.StartImmediate
+                //)
+                Cmd.ofSub ( fun _ -> hubService.Connect() |> ignore)
             model, cmd, NoIntent
     | NewGame gameName ->
         let cmd =

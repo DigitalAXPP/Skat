@@ -2,10 +2,10 @@ module SignalRClient
 
 open Microsoft.AspNetCore.SignalR.Client
 
-type ConnectionState =
-    | HubDisconnected
-    | HubConnecting
-    | HubConnected of HubConnection
+//type ConnectionState =
+//    | HubDisconnected
+//    | HubConnecting
+//    | HubConnected of HubConnection
 
 type ServerMsg =
     | JoinGame of string
@@ -38,3 +38,51 @@ let disconnect (hub: HubConnection) =
             do! hub.DisposeAsync().AsTask()
             printfn "Hub disconnected."
     }
+
+type HubService(hubUrl: string, dispatch: ServerMsg -> unit) =
+    let mutable hub: HubConnection option = None
+    
+    member _.IsConnected =
+        hub |> Option.isSome
+
+    member _.Connect() =
+        task {
+            match hub with
+                | Some _ -> printfn "Already connected."
+                | None ->
+                    let connection = 
+                        HubConnectionBuilder()
+                            .WithUrl(hubUrl)
+                            .WithAutomaticReconnect()
+                            .Build()
+
+                    connection.On<string>("ReceiveMove", fun move ->
+                        printf "New move: %s" move) |> ignore
+
+                    do! connection.StartAsync()
+                    hub <- Some connection
+        }
+
+    member _.Disconnect() =
+        match hub with
+            | Some connection ->
+                task {
+                    do! connection.StopAsync()
+                    do! connection.DisposeAsync().AsTask()
+                    hub <- None
+                    printfn "Hub disconnected."
+                }
+            | None -> 
+                task {
+                    printfn "No hub to disconnect."
+                }
+
+    member _.SendMove(move: string) =
+        task {
+            match hub with
+                | Some connection ->
+                    do! connection.InvokeAsync("SendMove", move)
+                    printfn "Move sent: %s" move
+                | None ->
+                    printfn "Not connected to hub."
+        }

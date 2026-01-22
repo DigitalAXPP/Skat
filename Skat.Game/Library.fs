@@ -35,6 +35,61 @@ module Types =
             for rank in allRanks do
                 yield { Rank = rank ; Suite = suite } ]
 
+    type PlayerId = int
+
+    type SkatPosition =
+        | Geben
+        | Hoeren
+        | Sagen
+
+    type Action =
+        | Bid
+        | Reject
+        | Undecided
+
+    type GameType =
+        | SuitGame of Suite  // One suit is trump
+        | Grand              // Only Jacks are trump
+        | NullGame               // No trumps at all
+
+    let normalRankOrder = [Seven; Eight; Nine; Dame; King; Ten; Ace]
+
+    type PlayerConfig = {
+        Player: PlayerId
+        Activity: Action
+        Amount: int option
+        Position: SkatPosition
+        StartingHand: Card list
+        HandsWon: (PlayerId * Card) list option
+    }
+
+    let firstPlayer = {
+        Player = 1
+        Activity = Undecided
+        Amount = None
+        Position = Geben
+        StartingHand = []
+        HandsWon = None
+    }
+
+    let secondPlayer = {
+        Player = 2
+        Activity = Undecided
+        Amount = None
+        Position = Geben
+        StartingHand = []
+        HandsWon = None
+    }
+
+    let thirdPlayer = {
+        Player = 3
+        Activity = Undecided
+        Amount = None
+        Position = Geben
+        StartingHand = []
+        HandsWon = None
+    }
+
 module Functions =
     open Types
 
@@ -83,3 +138,39 @@ module Functions =
         let (secondPlayerHand, newDeck) = List.splitAt 10 rest
         let (thirdPlayerHand, skat) = List.splitAt 10 newDeck
         { FirstPlayer = firstPlayerHand; SecondPlayer = secondPlayerHand; ThirdPlayer = thirdPlayerHand; Skat = skat }
+
+    let cardStrength (game: GameType) (card: Card) : int =
+        let jackSuitOrder = [Clubs; Spades; Hearts; Diamonds]
+
+        match game with
+        | Grand | SuitGame _ when card.Rank = Jack ->
+            100 + List.findIndex ((=) card.Suite) jackSuitOrder
+        | SuitGame trump when card.Suite = trump ->
+            50 + List.findIndex ((=) card.Rank) normalRankOrder
+        | _ ->
+            List.findIndex ((=) card.Rank) normalRankOrder
+
+    let winningHand (game: GameType) (hands: (PlayerId * Card) list) =
+        hands
+        |> List.map (fun (a,b) -> (a,b, (cardStrength game b)))
+        |> List.maxBy (fun (_, _, v) -> v)
+
+    let handValueGrand (hand: Card) =
+        match hand.Rank with
+        | Seven -> 0
+        | Eight -> 0
+        | Nine -> 0
+        | Dame -> 3
+        | King -> 4
+        | Ten -> 10
+        | Ace -> 11
+        | Jack -> 2
+
+    let calculateAugen (player: PlayerConfig) =
+        match player.HandsWon with
+        | Some v ->
+            v
+            |> List.map snd
+            |> List.map (fun h -> handValueGrand h)
+            |> List.sum
+        | None -> 0
