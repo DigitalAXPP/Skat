@@ -59,6 +59,9 @@ type HubService(hubUrl: string, dispatch: ServerMsg -> unit) =
                     connection.On<string>("ReceiveMove", fun move ->
                         printf "New move: %s" move) |> ignore
 
+                    connection.On<string seq>("PlayersUpdate", fun players ->
+                        printf "Players updated: %A" (players |> Seq.toList)) |> ignore
+
                     do! connection.StartAsync()
                     hub <- Some connection
         }
@@ -76,6 +79,36 @@ type HubService(hubUrl: string, dispatch: ServerMsg -> unit) =
                 task {
                     printfn "No hub to disconnect."
                 }
+
+    member _.EnterGame(user: string) =
+        task {
+            match hub with
+                | Some connection ->
+                    do! connection.InvokeAsync("JoinGame", "game1", user)
+                    printfn "Entered game as: %s" user
+                | None ->
+                    printfn "Not connected to hub."
+        }
+
+    member _.LeaveGame(user: string) =
+        task {
+            match hub with
+                | Some connection ->
+                    do! connection.InvokeAsync("QuitGame", "game1", user)
+                    printfn "Left game as: %s" user
+                | None ->
+                    printfn "Not connected to hub."
+        }
+
+    member _.TellEverybody(user: string) =
+        task {
+            match hub with
+                | Some connection ->
+                    do! connection.InvokeAsync("ShareUpdate", user)
+                    printfn "Told everybody: %s" user
+                | None ->
+                    printfn "Not connected to hub."
+        }
 
     member _.SendMove(move: string) =
         task {

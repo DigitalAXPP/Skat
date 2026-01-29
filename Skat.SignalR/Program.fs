@@ -50,6 +50,11 @@ type GameHub() =
             do! this.Clients.All.SendAsync("ReceiveMove", move)
         }
 
+    member this.ShareUpdate (msg: string) =
+        task {
+            do! this.Clients.All.SendAsync("ReceiveMove", msg)
+        }
+
 module Program =
     let exitCode = 0
 

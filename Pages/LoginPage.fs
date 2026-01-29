@@ -18,6 +18,7 @@ type Msg =
     | HubMsg of GameHub.Msg
     | ConnectHub
     | NewGame of string
+    | TellAll of string
 
 //let init (_hubService: HubService) = 
 let init () =
@@ -57,7 +58,13 @@ let update (hubService: HubService) msg model =
                 //    }
                 //    |> Async.StartImmediate
                 //)
-                Cmd.ofSub ( fun _ -> hubService.Connect() |> ignore)
+                //Cmd.ofSub ( fun _ -> hubService.Connect() |> ignore)
+                Cmd.ofAsyncMsg (
+                    async {
+                        do! hubService.Connect() |> Async.AwaitTask
+                        return HubMsg GameHub.HubConnected
+                    }
+                )
             model, cmd, NoIntent
     | NewGame gameName ->
         let cmd =
@@ -68,15 +75,28 @@ let update (hubService: HubService) msg model =
                 |> Async.StartImmediate
             )
         model, cmd, NoIntent
+    | TellAll message ->
+        let cmd =
+            Cmd.ofAsyncMsg (
+                async {
+                    do! hubService.TellEverybody message |> Async.AwaitTask
+                    return HubMsg GameHub.HubConnected
+                }
+            )
+            //Cmd.ofSub (fun _ ->
+            //    hubService.TellEverybody message |> ignore
+            //)
+        model, cmd, NoIntent
 
 let view model =
     VStack() {
         TextBlock($"Second Page: {model.Name}")
         TextBlock($"Hub status: {model.Hub.Status}")
         TextBlock($"Moves: {model.Hub.Moves}")
-        Button("Connect to hub.", ConnectHub)
+        Button("Connect to hub.", HubMsg (GameHub.ConnectHub))
         TextBox(model.Name, ChangeName)
         Button("Start New Game", HubMsg (GameHub.EnterGame model.Name))
+        Button("Send Message to All", TellAll "Hello from client!")
         Button("Quit New Game", HubMsg (GameHub.LeaveGame model.Name))
         Button("Add move", HubMsg (GameHub.MoveReceiving "left"))
         //Button("Go to Page 3", fun _ -> dispatch (App.NavigateTo SharedTypes.GamePage))
