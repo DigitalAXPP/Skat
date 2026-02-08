@@ -29,6 +29,15 @@ type ConnectionStatus =
     | Connecting
     | Connected
 
+type ServerMsg =
+    | MoveReceiving of string
+    | JoinGame of string list
+    | QuitGame
+
+type GameState =
+    | InGame
+    | NotInGame
+
 let getImageUri (imageName : string) =
     // Return the URI string for the embedded image resource
     $"avares://skat/Resources/Images/{imageName}"

@@ -17,7 +17,9 @@ type Msg =
     | NextGamePage
     | HubMsg of GameHub.Msg
     | ConnectHub
-    | NewGame of string
+    //| NewGame of string
+    | StartNewGame
+    | EndGame
     | TellAll of string
 
 //let init (_hubService: HubService) = 
@@ -66,15 +68,19 @@ let update (hubService: HubService) msg model =
                     }
                 )
             model, cmd, NoIntent
-    | NewGame gameName ->
-        let cmd =
-            Cmd.ofSub (fun dispatch ->
-                async {
-                    dispatch (HubMsg (GameHub.EnterGame gameName))
-                }
-                |> Async.StartImmediate
-            )
-        model, cmd, NoIntent
+    //| NewGame gameName ->
+    //    let cmd =
+    //        Cmd.ofSub (fun dispatch ->
+    //            async {
+    //                dispatch (HubMsg (GameHub.EnterGame gameName))
+    //            }
+    //            |> Async.StartImmediate
+    //        )
+    //    model, cmd, NoIntent
+    | StartNewGame ->
+        model,
+        Cmd.ofMsg (HubMsg (GameHub.Domain (Messages.EnterGame model.Name))),
+        NoIntent
     | TellAll message ->
         let cmd =
             Cmd.ofAsyncMsg (

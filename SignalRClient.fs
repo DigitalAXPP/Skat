@@ -1,16 +1,19 @@
 module SignalRClient
 
 open Microsoft.AspNetCore.SignalR.Client
+open SharedTypes
+open Messages
+open Transport
 
 //type ConnectionState =
 //    | HubDisconnected
 //    | HubConnecting
 //    | HubConnected of HubConnection
 
-type ServerMsg =
-    | JoinGame of string
-    | QuitGame of string
-    | MoveReceiving of string
+//type ServerMsg =
+//    | JoinGame of string
+//    | QuitGame of string
+//    | MoveReceiving of string
 
 let connect (hubUrl : string) (dispatch : ServerMsg -> unit) =
     task {
@@ -39,7 +42,7 @@ let disconnect (hub: HubConnection) =
             printfn "Hub disconnected."
     }
 
-type HubService(hubUrl: string, dispatch: ServerMsg -> unit) =
+type HubService(hubUrl: string, dispatch: DomainMsg -> unit) =
     let mutable hub: HubConnection option = None
     
     member _.IsConnected =
@@ -61,6 +64,11 @@ type HubService(hubUrl: string, dispatch: ServerMsg -> unit) =
 
                     connection.On<string seq>("PlayersUpdate", fun players ->
                         printf "Players updated: %A" (players |> Seq.toList)) |> ignore
+
+                    connection.On<ServerMsgDto>("ServerMsg", fun (dto: ServerMsgDto) ->
+                        let msg = Transport.fromDto dto
+                        dispatch (FromServer msg)
+                    ) |> ignore
 
                     do! connection.StartAsync()
                     hub <- Some connection

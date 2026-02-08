@@ -5,6 +5,7 @@ open SignalRClient
 open Microsoft.AspNetCore.SignalR.Client
 open Fabulous
 open SharedTypes
+open Transport
 
 type State =
     | Disconnected
@@ -15,6 +16,8 @@ type State =
 type Model = { 
     Status: State
     Moves: string list
+    Game: GameState
+    Players: string list
     //Connection: ConnectionState
     //IsConnected: bool
 }
@@ -27,7 +30,7 @@ type Msg =
     | HubSingleConnecting
     | HubConnected
     | HubDisconnected
-    | ServerMsg of ServerMsg
+    | FromServer of ServerMsg
     | EnterGame of string
     | LeaveGame of string
     //| GameJoined
@@ -35,17 +38,22 @@ type Msg =
     | MoveReceiving of string
     | SendMove of string
     | ConnectionHubFailed of string
+    | Domain of Messages.DomainMsg
+    | EnterGameSucceeded
+    | EnterGameFailed of string
 
-let mapServerMsg msg =
-    match msg with
-    | ServerMsg.MoveReceiving move -> ServerMsg.MoveReceiving move
-    | ServerMsg.JoinGame name -> ServerMsg.JoinGame name
-    | ServerMsg.QuitGame name -> ServerMsg.QuitGame name
+//let mapServerMsg msg =
+//    match msg with
+//    | ServerMsg.MoveReceiving move -> ServerMsg.MoveReceiving move
+//    | ServerMsg.JoinGame name -> ServerMsg.JoinGame name
+//    | ServerMsg.QuitGame name -> ServerMsg.QuitGame name
 
 let init() = 
     {
         Status = Disconnected
         Moves = []
+        Game = NotInGame
+        Players = []
     }, Cmd.none
     //Connection = HubDisconnected}, Cmd.none
     //IsConnected = false}, Cmd.none
@@ -79,15 +87,39 @@ let update (hubService: HubService) msg model =
                 hubService.Disconnect() |> ignore
             )
         { model with Status = Disconnected }, cmd
-    | ServerMsg serverMsg ->
+    | FromServer serverMsg ->
         // map server → UI updates here
         match serverMsg with
-        | JoinGame name ->
-            { model with Status = Connected }, Cmd.none
-        | QuitGame name ->
-            { model with Status = Connected }, Cmd.none
+        | JoinGame (players) ->
+            { model with
+                Game = InGame
+                Players = players
+            }, Cmd.none
+        | QuitGame ->
+            { model with Game = NotInGame }, Cmd.none
         | ServerMsg.MoveReceiving move ->
             { model with Moves = move :: model.Moves }, Cmd.none
+
+    | Domain domainMsg ->
+        match domainMsg with
+        | Messages.FromServer serverMsg ->
+            match serverMsg with
+            | JoinGame players ->
+                { model with Game = InGame; Players = players }, Cmd.none
+            | QuitGame ->
+                { model with Game = NotInGame }, Cmd.none
+            | ServerMsg.MoveReceiving move ->
+                { model with Moves = move :: model.Moves }, Cmd.none
+
+        | Messages.EnterGame name ->
+            model, Cmd.ofMsg (EnterGame name)
+
+        | Messages.LeaveGame name ->
+            model, Cmd.ofMsg (LeaveGame name)
+
+        | Messages.ConnectionHubFailed err ->
+            { model with Status = Error err }, Cmd.none
+
     //| GameJoined, _ -> {model with Status = Connected.ToString()}, Cmd.none
     //| GameQuit, _ -> {model with Status = Disconnected.ToString()}, Cmd.none
 
@@ -125,7 +157,13 @@ let update (hubService: HubService) msg model =
                         return ConnectionHubFailed exn.Message
                 })
             model, cmd
+        | _ -> { model with Status = Error "Hub is not connected" }, Cmd.none
 
+    | EnterGameSucceeded ->
+        { model with Status = Connected }, Cmd.none
+
+    | EnterGameFailed err ->
+        model, Cmd.ofMsg (ConnectionHubFailed err)
     //| LeaveGame name when model.Status = Connected ->
     //    let cmd =
     //        Cmd.ofSub (fun _ ->

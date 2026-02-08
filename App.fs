@@ -53,7 +53,14 @@ module App =
                     HubService(
                         "http://localhost:5109/gamehub",
                         fun serverMsg ->
-                            dispatch (LoginMsg (LoginPage.HubMsg (GameHub.ServerMsg serverMsg)))
+                            //dispatch (LoginMsg (LoginPage.HubMsg (GameHub.ServerMsg serverMsg)))
+                            dispatch (
+                                LoginMsg (
+                                    LoginPage.HubMsg (
+                                            GameHub.Domain serverMsg
+                                    )
+                                )
+                            )                        
                     )
                 dispatch (HubServiceMsg hub)
                 )

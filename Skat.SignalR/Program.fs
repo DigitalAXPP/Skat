@@ -15,6 +15,7 @@ open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open System.Collections.Concurrent
 open Microsoft.AspNetCore.SignalR
+open SharedTypes
 
 module GameStore =
     let games = ConcurrentDictionary<string, ResizeArray<string>>()
@@ -32,6 +33,11 @@ type GameHub() =
         task {
             do! this.Groups.AddToGroupAsync (this.Context.ConnectionId, gameId)
             let players = GameStore.addPlayer gameId playerName
+
+            let msg = ServerMsg.JoinGame (List.ofSeq players)
+            let dto = Transport.toDto msg
+            do! this.Clients.Group(gameId).SendAsync("ServerMsg", dto)
+
             do! this.Clients.Group(gameId).SendAsync("PlayersUpdate", players)
         }
 
