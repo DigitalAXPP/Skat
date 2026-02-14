@@ -30,17 +30,19 @@ type Msg =
     | HubSingleConnecting
     | HubConnected
     | HubDisconnected
-    | FromServer of ServerMsg
+    //| FromServer of ServerMsg
     | EnterGame of string
     | LeaveGame of string
     //| GameJoined
     //| GameQuit
     | MoveReceiving of string
     | SendMove of string
-    | ConnectionHubFailed of string
+    //| ConnectionHubFailed of string
     | Domain of Messages.DomainMsg
     | EnterGameSucceeded
     | EnterGameFailed of string
+    | ExitGameSucceeded
+    | ExitGameFailed of string
 
 //let mapServerMsg msg =
 //    match msg with
@@ -87,35 +89,50 @@ let update (hubService: HubService) msg model =
                 hubService.Disconnect() |> ignore
             )
         { model with Status = Disconnected }, cmd
-    | FromServer serverMsg ->
-        // map server → UI updates here
-        match serverMsg with
-        | JoinGame (players) ->
-            { model with
-                Game = InGame
-                Players = players
-            }, Cmd.none
-        | QuitGame ->
-            { model with Game = NotInGame }, Cmd.none
-        | ServerMsg.MoveReceiving move ->
-            { model with Moves = move :: model.Moves }, Cmd.none
+    //| FromServer serverMsg ->
+    //    // map server → UI updates here
+    //    match serverMsg with
+    //    | JoinGame (players) ->
+    //        { model with
+    //            Game = InGame
+    //            Players = players
+    //        }, Cmd.none
+    //    | QuitGame ->
+    //        { model with Game = NotInGame }, Cmd.none
+    //    | ServerMsg.MoveReceiving move ->
+    //        { model with Moves = move :: model.Moves }, Cmd.none
 
     | Domain domainMsg ->
         match domainMsg with
-        | Messages.FromServer serverMsg ->
-            match serverMsg with
-            | JoinGame players ->
-                { model with Game = InGame; Players = players }, Cmd.none
-            | QuitGame ->
-                { model with Game = NotInGame }, Cmd.none
-            | ServerMsg.MoveReceiving move ->
-                { model with Moves = move :: model.Moves }, Cmd.none
+        //| Messages.FromServer serverMsg ->
+        //    match serverMsg with
+        //    | JoinGame players ->
+        //        { model with Game = InGame; Players = players }, Cmd.none
+        //    | QuitGame ->
+        //        { model with Game = NotInGame }, Cmd.none
+        //    | ServerMsg.MoveReceiving move ->
+        //        { model with Moves = move :: model.Moves }, Cmd.none
 
         | Messages.EnterGame name ->
             model, Cmd.ofMsg (EnterGame name)
 
         | Messages.LeaveGame name ->
             model, Cmd.ofMsg (LeaveGame name)
+
+        | Messages.GameJoined players ->
+            { model with
+                Game = InGame
+                Players = players
+            }, Cmd.none
+
+        | Messages.GameLeft ->
+            { model with 
+                Game = NotInGame 
+                Players = []
+            }, Cmd.none
+
+        | Messages.MoveReceived move ->
+            { model with Moves = move :: model.Moves }, Cmd.none
 
         | Messages.ConnectionHubFailed err ->
             { model with Status = Error err }, Cmd.none
@@ -152,18 +169,18 @@ let update (hubService: HubService) msg model =
                 Cmd.ofAsyncMsg (async {
                     try
                         do! hubService.EnterGame(name) |> Async.AwaitTask
-                        return HubConnected
+                        return EnterGameSucceeded
                     with exn ->
-                        return ConnectionHubFailed exn.Message
+                        return EnterGameFailed exn.Message
                 })
             model, cmd
-        | _ -> { model with Status = Error "Hub is not connected" }, Cmd.none
+        | _ -> model, Cmd.ofMsg (EnterGameFailed $"Status is: {model.Status}")
 
     | EnterGameSucceeded ->
-        { model with Status = Connected }, Cmd.none
+        model, Cmd.none
 
     | EnterGameFailed err ->
-        model, Cmd.ofMsg (ConnectionHubFailed err)
+        model, Cmd.none
     //| LeaveGame name when model.Status = Connected ->
     //    let cmd =
     //        Cmd.ofSub (fun _ ->
@@ -176,12 +193,19 @@ let update (hubService: HubService) msg model =
                 Cmd.ofAsyncMsg (async {
                     try
                         do! hubService.LeaveGame(name) |> Async.AwaitTask
-                        return HubConnected
+                        return ExitGameSucceeded
                     with exn ->
-                        return ConnectionHubFailed exn.Message
+                        return ExitGameFailed exn.Message
 
                 })
             model, cmd
+        | _ -> model, Cmd.ofMsg (ExitGameFailed $"Status is: {model.Status}")
+
+    | ExitGameSucceeded ->
+        model, Cmd.none
+
+    | ExitGameFailed err ->
+        model, Cmd.none
 
     | MoveReceiving move when model.Status = Connected ->
         let cmd =
@@ -202,8 +226,8 @@ let update (hubService: HubService) msg model =
         { model with Moves = move :: model.Moves }, cmd
 
     //| ConnectionHubFailed err, _ ->
-    | ConnectionHubFailed err ->
-        //{ model with Status = $"Connection failed: {err}" }, Cmd.none
-        { model with Status = Error $"{err}" }, Cmd.none
+    //| ConnectionHubFailed err ->
+    //    //{ model with Status = $"Connection failed: {err}" }, Cmd.none
+    //    { model with Status = Error $"{err}" }, Cmd.none
 
     | _ -> model, Cmd.none

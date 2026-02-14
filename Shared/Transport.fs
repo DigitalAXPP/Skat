@@ -36,3 +36,17 @@ let fromDto (dto: ServerMsgDto) =
         QuitGame
     | t ->
         failwith $"Unknown ServerMsg type: {t}"
+
+let toDomainMsg serverMsg =
+    match serverMsg with
+    | ServerMsg.JoinGame players ->
+        Messages.GameJoined players
+    | ServerMsg.QuitGame ->
+        Messages.GameLeft
+    | ServerMsg.MoveReceiving move ->
+        Messages.MoveReceived move
+
+let toDomain (dto: ServerMsgDto) =
+    dto
+    |> fromDto
+    |> toDomainMsg

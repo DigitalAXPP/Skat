@@ -5,5 +5,10 @@ open SharedTypes
 type DomainMsg =
     | EnterGame of string
     | LeaveGame of string
-    | FromServer of ServerMsg
+
+    | GameJoined of string list
+    | GameLeft
+    | MoveReceived of string
+    //| FromServer of ServerMsg
+
     | ConnectionHubFailed of string

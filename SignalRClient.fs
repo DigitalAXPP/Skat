@@ -42,7 +42,10 @@ let disconnect (hub: HubConnection) =
             printfn "Hub disconnected."
     }
 
-type HubService(hubUrl: string, dispatch: DomainMsg -> unit) =
+type HubService(
+    hubUrl: string,
+    dispatch: DomainMsg -> unit) =
+
     let mutable hub: HubConnection option = None
     
     member _.IsConnected =
@@ -66,8 +69,8 @@ type HubService(hubUrl: string, dispatch: DomainMsg -> unit) =
                         printf "Players updated: %A" (players |> Seq.toList)) |> ignore
 
                     connection.On<ServerMsgDto>("ServerMsg", fun (dto: ServerMsgDto) ->
-                        let msg = Transport.fromDto dto
-                        dispatch (FromServer msg)
+                        let domainMsg = Transport.toDomain dto
+                        dispatch domainMsg
                     ) |> ignore
 
                     do! connection.StartAsync()
