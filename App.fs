@@ -36,6 +36,11 @@ module App =
         | LoginMsg of LoginPage.Msg
         | GameMsg of GamePage.Msg
         | HubServiceMsg of HubService
+        | HubConnected
+        | EnterGameSucceeded
+        | LeaveGameSucceeded
+        | MessageSendToAllSucceeded
+        | HubFailure of string
     //type Msg =
     //    | Increment
     //    | Decrement
@@ -122,16 +127,107 @@ module App =
                 { model with Home = updated }, Cmd.map HomeMsg cmd
 
         | LoginMsg m ->
-            match model.HubService with
-            | Some hub ->
-                let updated, cmd, intention =
-                    LoginPage.update hub m model.Login
-                match intention with
-                | GoToGamePage ->
-                    { model with CurrentPage = PageGame; Login = updated }, Cmd.map LoginMsg cmd
-                | _ -> { model with Login = updated }, Cmd.map LoginMsg cmd
-            | None ->
-                model, Cmd.none
+            match m with
+            | LoginPage.RequestConnection ->
+                match model.HubService with
+                | Some hub ->
+                    let cmd =
+                        Cmd.ofAsyncMsg (
+                            async {
+                                do! hub.Connect() |> Async.AwaitTask
+                                return HubConnected
+                            }
+                        )
+                    model, cmd
+                | None ->
+                    model, Cmd.none
+            | _ ->
+                match model.HubService with
+                | Some hub ->
+                    let updated, cmd, intention =
+                        LoginPage.update hub m model.Login
+                    match intention with
+                    | GoToGamePage ->
+                        { model with CurrentPage = PageGame; Login = updated }, Cmd.map LoginMsg cmd
+                    | StartGameRequested name ->
+                        match model.HubService with
+                        | Some hub ->
+                            let cmdGameRequested =
+                                Cmd.ofAsyncMsg (async {
+                                    try
+                                        do! hub.EnterGame(name) |> Async.AwaitTask
+                                        return EnterGameSucceeded
+                                    with exn ->
+                                        return HubFailure exn.Message
+                                })
+                            { model with Login = updated },
+                            Cmd.batch [
+                                cmdGameRequested
+                                Cmd.map LoginMsg cmd
+                            ]
+                        | None ->
+                            { model with Login = updated },
+                            Cmd.none
+                    | EndGameRequested name ->
+                        match model.HubService with
+                        | Some hub ->
+                            let cmdEndGame =
+                                Cmd.ofAsyncMsg (async {
+                                    try
+                                        do! hub.LeaveGame(name) |> Async.AwaitTask
+                                        return LeaveGameSucceeded
+                                    with exn ->
+                                        return HubFailure exn.Message
+                                })
+                            { model with Login = updated },
+                            Cmd.batch [
+                                cmdEndGame
+                                Cmd.map LoginMsg cmd
+                            ]
+                        | None ->
+                            { model with Login = updated },
+                            Cmd.none
+                    | SendSelectedCard card ->
+                        match model.HubService with
+                        | Some hub ->
+                            let cmdSendCard =
+                                Cmd.ofAsyncMsg (async {
+                                    try
+                                        do! hub.SendMove(card) |> Async.AwaitTask
+                                        return MessageSendToAllSucceeded
+                                    with exn ->
+                                        return HubFailure exn.Message
+                                })
+                            { model with Login = updated },
+                            Cmd.batch [
+                                cmdSendCard
+                                Cmd.map LoginMsg cmd
+                            ]
+                        | None ->
+                            { model with Login = updated },
+                            Cmd.none
+                    | SendMessageToAll message ->
+                        match model.HubService with
+                        | Some hub ->
+                            let cmdSendMessage =
+                                Cmd.ofAsyncMsg (async {
+                                    try
+                                        do! hub.TellEverybody(message) |> Async.AwaitTask
+                                        return MessageSendToAllSucceeded
+                                    with exn ->
+                                        return HubFailure exn.Message
+                                })
+                            { model with Login = updated },
+                            Cmd.batch [
+                                cmdSendMessage
+                                Cmd.map LoginMsg cmd
+                            ]
+                        | None ->
+                            { model with Login = updated },
+                            Cmd.none
+                    | _ -> { model with Login = updated }, Cmd.map LoginMsg cmd
+                | None ->
+                    model, Cmd.none
             //let updated, cmd, intention = LoginPage.update model.HubService m model.Login
             //match intention with
             //| GoToGamePage ->
@@ -139,11 +235,31 @@ module App =
             //| _ -> { model with Login = updated }, Cmd.map LoginMsg cmd
 
         | GameMsg m ->
-            let updated, cmd, intention = GamePage.update m model.Game
-            match intention with
-            | GoToHomePage ->
-                { model with CurrentPage = PageHome; Game = updated }, Cmd.map GameMsg cmd
-            | _ -> { model with Game = updated }, Cmd.map GameMsg cmd
+            match model.HubService with
+            | Some hub ->
+                let updated, cmd, intention = 
+                    GamePage.update hub m model.Game
+                match intention with
+                | GoToHomePage ->
+                    { model with CurrentPage = PageHome; Game = updated }, Cmd.map GameMsg cmd
+                | _ -> { model with Game = updated }, Cmd.map GameMsg cmd
+            | None ->
+                model, Cmd.none
+
+        | HubConnected ->
+            model, Cmd.none
+
+        | EnterGameSucceeded ->
+            model, Cmd.none
+
+        | LeaveGameSucceeded ->
+            model, Cmd.none
+
+        | MessageSendToAllSucceeded ->
+            model, Cmd.none
+
+        | HubFailure errorMsg ->
+            model, Cmd.none
 
     //let update msg model =
     //    match msg with
@@ -180,7 +296,7 @@ module App =
                 //| PageGame ->
                 //    GamePage.view model.Game (GameMsg >> dispatch)
                 | PageHome -> View.map HomeMsg (HomePage.view model.Home)
-                | PageLogin -> View.map LoginMsg (LoginPage.view model.Login)
+                | PageLogin -> View.map LoginMsg (LoginPage.view model.HubService model.Login)
                 | PageGame -> View.map GameMsg (GamePage.view model.Game)
             )
         )

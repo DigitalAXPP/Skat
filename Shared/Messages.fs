@@ -3,6 +3,9 @@ module Messages
 open SharedTypes
 
 type DomainMsg =
+    | ConnectHub
+    | DisconnectHub
+    
     | EnterGame of string
     | LeaveGame of string
 

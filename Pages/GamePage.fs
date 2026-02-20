@@ -6,6 +6,7 @@ open Fabulous
 open SharedTypes
 open Skat.Game.Types
 open Skat.Game.Functions
+open SignalRClient
 
 type Model = {
     Game: GameType
@@ -56,7 +57,7 @@ let removeCardFromPlayer model (id: int) (card: Card) =
         | 3 when model.PlayerThree.Player = 3
             -> { model with PlayerThree.StartingHand = newHand}
 
-let update msg model =
+let update (hubService: HubService) msg model =
     match msg with
     | NextHomePage -> model, Cmd.none, GoToHomePage
     | SetCards -> (assignHandToPlayers model (dealInitialHand Deck)), Cmd.none, NoIntent

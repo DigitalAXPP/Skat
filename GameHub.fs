@@ -113,6 +113,16 @@ let update (hubService: HubService) msg model =
         //    | ServerMsg.MoveReceiving move ->
         //        { model with Moves = move :: model.Moves }, Cmd.none
 
+        | Messages.ConnectHub ->
+            { model with
+                Status = Connected
+            }, Cmd.ofMsg (ConnectHub)
+
+        | Messages.DisconnectHub ->
+            { model with
+                Status = Disconnected
+            }, Cmd.ofMsg (DisconnectHub)
+
         | Messages.EnterGame name ->
             model, Cmd.ofMsg (EnterGame name)
 

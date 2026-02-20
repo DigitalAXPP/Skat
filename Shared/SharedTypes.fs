@@ -15,6 +15,10 @@ type Page =
 //
 /// Use values of this type to indicate which page the application should navigate to.
 type Intent =
+    | StartGameRequested of string
+    | EndGameRequested of string
+    | SendSelectedCard of string
+    | SendMessageToAll of string
     /// Navigate to the login page where the user can enter credentials or authenticate.
     | GoToLoginPage
     /// Navigate to the game page where the main gameplay or game UI is presented.
