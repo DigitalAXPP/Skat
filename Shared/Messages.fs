@@ -12,6 +12,5 @@ type DomainMsg =
     | GameJoined of string list
     | GameLeft
     | MoveReceived of string
-    //| FromServer of ServerMsg
 
     | ConnectionHubFailed of string

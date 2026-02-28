@@ -69,18 +69,14 @@ module Program =
 
         let builder = WebApplication.CreateBuilder(args)
 
-        //builder.Services.AddControllers()
         builder.Services
             .AddSignalR() |> ignore
-            //.AddJsonProtocol(fun options ->
-            //    options.PayloadSerializerOptions.Converters.Add(JsonFSharpConverter()))
 
         let app = builder.Build()
 
         app.UseHttpsRedirection()
 
         app.UseAuthorization()
-        //app.MapControllers()
         app.MapHub<GameHub>("/gamehub") |> ignore
 
         app.Run()

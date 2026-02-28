@@ -5,16 +5,6 @@ open SharedTypes
 open Messages
 open Transport
 
-//type ConnectionState =
-//    | HubDisconnected
-//    | HubConnecting
-//    | HubConnected of HubConnection
-
-//type ServerMsg =
-//    | JoinGame of string
-//    | QuitGame of string
-//    | MoveReceiving of string
-
 let connect (hubUrl : string) (dispatch : ServerMsg -> unit) =
     task {
         let hub =

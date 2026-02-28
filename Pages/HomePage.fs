@@ -21,8 +21,6 @@ let update msg model =
 let view model =
     VStack() {
         TextBlock($"First Page: %d{model.Something}")
-        //Button("Do something", fun _ -> dispatch DoSomething)
-        //Button("Go to Page 2", fun _ -> dispatch GoToLoginPage)
         
         Button("Do something", DoSomething)
         Button("Go to Page 2", NextLoginPage)
