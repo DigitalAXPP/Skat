@@ -12,6 +12,8 @@ type Model = {
     Game: GameType
     CardValue: int
     CardSelected: (PlayerId * Card) list option
+    SelectedCard: Card option
+    Hand: Card list option
     PlayerOne: PlayerConfig
     PlayerTwo: PlayerConfig
     PlayerThree: PlayerConfig
@@ -24,12 +26,15 @@ type Msg =
     | CompareCards
     | RemoveCard of (PlayerId * Card)
     | WinningHand
+    | TellAll of string
 
 let init = 
     {
         Game = Grand
         CardValue = 0
-        CardSelected = None 
+        CardSelected = None
+        SelectedCard = None
+        Hand = None
         PlayerOne = firstPlayer
         PlayerTwo = secondPlayer
         PlayerThree = thirdPlayer
@@ -61,15 +66,16 @@ let update (hubService: HubService) msg model =
     match msg with
     | NextHomePage -> model, Cmd.none, GoToHomePage
     | SetCards -> (assignHandToPlayers model (dealInitialHand Deck)), Cmd.none, NoIntent
-    | ToggleCards (Some [(id, cardOpt)]) ->
+    | ToggleCards (Some [(id, cardSelection)]) ->
         let newList =
             match model.CardSelected with
-            | None -> Some [(id, cardOpt)]
-            | Some _ -> Some (model.CardSelected.Value @ [(id, cardOpt)])
+            | None -> Some [(id, cardSelection)]
+            | Some _ -> Some (model.CardSelected.Value @ [(id, cardSelection)])
         let newModel = { model with CardSelected = newList }
         newModel, Cmd.batch [
+            Cmd.ofMsg (TellAll (cardSelection.ToString()))
             Cmd.ofMsg CompareCards
-            Cmd.ofMsg (RemoveCard (id, cardOpt))
+            Cmd.ofMsg (RemoveCard (id, cardSelection))
         ], NoIntent
     | CompareCards ->
         let selectedCards = model.CardSelected
@@ -111,9 +117,12 @@ let update (hubService: HubService) msg model =
                 { model with PlayerThree.HandsWon = Some newList }
         let newModel = { modelHandsWon with CardSelected = None  }
         newModel, Cmd.none, NoIntent
+    | TellAll message ->
+        model, Cmd.none, SendMessageToAll message
 
-let view model =
+let view (hub: HubService option) model =
         VStack(spacing = 25.) {
+            TextBlock($"Connection: {hub.Value.IsConnected}")
             TextBlock($"Third Page: {model.PlayerOne.StartingHand}")
             TextBlock($"Third Page: {model.CardSelected}")
             TextBlock($"Card value: {model.CardValue}")

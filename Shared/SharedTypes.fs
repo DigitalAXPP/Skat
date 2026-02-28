@@ -1,5 +1,7 @@
 module SharedTypes
 
+open Skat.Game.Types
+
 /// Represents the possible top-level pages/screens in the application.
 /// Values of this type are used by the application's routing and navigation logic
 /// to indicate which page should be displayed.
@@ -41,6 +43,60 @@ type ServerMsg =
 type GameState =
     | InGame
     | NotInGame
+
+type Seat =
+    | Forehand
+    | Middlehand
+    | Rearhand
+
+type PlayerState =
+    { 
+        PlayerId : int
+        Seat : Seat
+        CurrentBid : int option
+        Hand : Card list
+        TricksWon : Card list list
+        IsDeclarer : bool
+    }
+
+type GamePhase =
+    | Bidding
+    | Playing
+    | GameOver
+
+type BiddingState =
+    { 
+        CurrentBidder : PlayerId
+        Listener : PlayerId
+        CurrentValue : int 
+    }
+
+type Trump =
+    | Suit of Suite
+    | Grand
+    | Null
+
+type TrickState =
+    { 
+        CurrentPlayer : PlayerId
+        CardsOnTable : (PlayerId * Card) list
+        GameType : Trump
+        Declarer : PlayerId 
+    }
+
+type ScoreState =
+    { 
+        Declarer : PlayerId
+        DeclarerScore : int
+        DefendersScore : int 
+    }
+
+type GameDetails =
+    { 
+        Players : Map<PlayerId, PlayerState>
+        CurrentTrick : Card list
+        Phase : GamePhase 
+    }
 
 let getImageUri (imageName : string) =
     // Return the URI string for the embedded image resource

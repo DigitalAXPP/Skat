@@ -39,7 +39,7 @@ let update (hubService: HubService) msg model =
         model, Cmd.none, NoIntent
     | NextGamePage -> model, Cmd.none, GoToGamePage
     | HubMsg hubMsg ->
-        // You could delegate updates to GameHub.update if you have one
+        // Delegate updates to GameHub.update
         let newHub, hubCmd = GameHub.update hubService hubMsg model.Hub
         { model with Hub = newHub }, Cmd.map HubMsg hubCmd, NoIntent
     //| ConnectHub ->
@@ -115,7 +115,7 @@ let view (hub: HubService option) model =
         TextBox(model.Name, ChangeName)
         //Button("Start New Game", HubMsg (GameHub.EnterGame model.Name))
         Button("Start New Game", StartNewGame model.Name)
-        Button("Send Message to All", TellAll "Hello from client!")
+        Button("Send Message to All", TellAll model.Name)
         //Button("Quit New Game", HubMsg (GameHub.LeaveGame model.Name))
         Button("Quit Game", EndGame model.Name)
         //Button("Add move", HubMsg (GameHub.MoveReceiving "left"))

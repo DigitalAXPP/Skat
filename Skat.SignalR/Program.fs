@@ -70,7 +70,10 @@ module Program =
         let builder = WebApplication.CreateBuilder(args)
 
         //builder.Services.AddControllers()
-        builder.Services.AddSignalR() |> ignore
+        builder.Services
+            .AddSignalR() |> ignore
+            //.AddJsonProtocol(fun options ->
+            //    options.PayloadSerializerOptions.Converters.Add(JsonFSharpConverter()))
 
         let app = builder.Build()
 

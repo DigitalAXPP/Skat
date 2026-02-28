@@ -242,6 +242,25 @@ module App =
                 match intention with
                 | GoToHomePage ->
                     { model with CurrentPage = PageHome; Game = updated }, Cmd.map GameMsg cmd
+                | SendMessageToAll message ->
+                        match model.HubService with
+                        | Some hub ->
+                            let cmdSendMessage =
+                                Cmd.ofAsyncMsg (async {
+                                    try
+                                        do! hub.TellEverybody(message) |> Async.AwaitTask
+                                        return MessageSendToAllSucceeded
+                                    with exn ->
+                                        return HubFailure exn.Message
+                                })
+                            { model with Game = updated },
+                            Cmd.batch [
+                                cmdSendMessage
+                                Cmd.map GameMsg cmd
+                            ]
+                        | None ->
+                            { model with Game = updated },
+                            Cmd.none 
                 | _ -> { model with Game = updated }, Cmd.map GameMsg cmd
             | None ->
                 model, Cmd.none
@@ -297,7 +316,7 @@ module App =
                 //    GamePage.view model.Game (GameMsg >> dispatch)
                 | PageHome -> View.map HomeMsg (HomePage.view model.Home)
                 | PageLogin -> View.map LoginMsg (LoginPage.view model.HubService model.Login)
-                | PageGame -> View.map GameMsg (GamePage.view model.Game)
+                | PageGame -> View.map GameMsg (GamePage.view model.HubService model.Game)
             )
         )
     //let view model =
