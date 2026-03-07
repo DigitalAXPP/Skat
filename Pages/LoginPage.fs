@@ -8,7 +8,7 @@ open SignalRClient
 open Fabulous.Dispatcher
 
 type Model = { 
-    Name: string
+    UserName: string
     Hub: GameHub.Model
 }
 
@@ -20,27 +20,23 @@ type Msg =
     | EndGame of string
     | SelectCard of string
     | TellAll of string
-    | RequestConnection
+    | RequestConnection of string
 
 let init () =
     let hubModel, hubCmd = GameHub.init()
     { 
-        Name = "Hi"
+        UserName = ""
         Hub = hubModel
     }, Cmd.map HubMsg hubCmd
 
-let update (hubService: HubService) msg model =
+let update msg model =
     match msg with
-    | ChangeName n -> { model with Name = n }, Cmd.none, NoIntent
-    | RequestConnection ->
+    | ChangeName n -> { model with UserName = n }, Cmd.none, NoIntent
+    | RequestConnection name ->
         model, Cmd.none, NoIntent
     | NextGamePage -> model, Cmd.none, GoToGamePage
-    | HubMsg hubMsg ->
-        // Delegate updates to GameHub.update
-        let newHub, hubCmd = GameHub.update hubService hubMsg model.Hub
-        { model with Hub = newHub }, Cmd.map HubMsg hubCmd, NoIntent
     | StartNewGame name ->
-        model, Cmd.none, StartGameRequested name
+        { model with UserName = name }, Cmd.none, StartGameRequested name
     | EndGame name ->
         model, Cmd.none, EndGameRequested name
     | SelectCard card ->
@@ -51,14 +47,14 @@ let update (hubService: HubService) msg model =
 let view (hub: HubService option) model =
     VStack() {
         TextBlock($"Hub connection: {hub.Value.IsConnected}")
-        TextBlock($"Second Page: {model.Name}")
+        TextBlock($"Second Page: {model.UserName}")
         TextBlock($"Hub status: {model.Hub.Status}")
         TextBlock($"Moves: {model.Hub.Moves}")
-        Button("Connect to hub.", RequestConnection)
-        TextBox(model.Name, ChangeName)
-        Button("Start New Game", StartNewGame model.Name)
-        Button("Send Message to All", TellAll model.Name)
-        Button("Quit Game", EndGame model.Name)
+        Button("Connect to hub.", RequestConnection model.UserName)
+        TextBox(model.UserName, ChangeName)
+        Button("Start New Game", StartNewGame model.UserName)
+        Button("Send Message to All", TellAll model.UserName)
+        Button("Quit Game", EndGame model.UserName)
         Button("Add move", SelectCard "right")
         Button("Go to Game Page", NextGamePage)
     }

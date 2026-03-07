@@ -20,6 +20,7 @@ type Intent =
     | StartGameRequested of string
     | EndGameRequested of string
     | SendSelectedCard of string
+    | AppendCard of string
     | SendMessageToAll of string
     /// Navigate to the login page where the user can enter credentials or authenticate.
     | GoToLoginPage
@@ -42,6 +43,7 @@ type ServerMsg =
 
 type GameState =
     | InGame
+    | InLobby
     | NotInGame
 
 type Seat =

@@ -13,6 +13,10 @@ module App =
     type Model =
         {
             CurrentPage: Page
+            CurrentUser: string option
+            Status: GameState
+            Players: string list
+            Moves: string list
             Home: HomePage.Model
             Login: LoginPage.Model
             Game: GamePage.Model
@@ -25,7 +29,10 @@ module App =
         | LoginMsg of LoginPage.Msg
         | GameMsg of GamePage.Msg
         | HubServiceMsg of HubService
+        | DomainMsg of Messages.DomainMsg
         | HubConnected
+        | SendJoingame of string
+        | JoinGameConfirmed
         | EnterGameSucceeded
         | LeaveGameSucceeded
         | MessageSendToAllSucceeded
@@ -37,16 +44,22 @@ module App =
                 let hub =
                     HubService(
                         "http://localhost:5109/gamehub",
-                        fun serverMsg ->
-                            dispatch (
-                                LoginMsg (
-                                    LoginPage.HubMsg (
-                                            GameHub.Domain serverMsg
-                                    )
-                                )
-                            )                        
+                        fun domainMsg ->
+                            dispatch (DomainMsg domainMsg)                        
                     )
                 dispatch (HubServiceMsg hub)
+                //    HubService(
+                //        "http://localhost:5109/gamehub",
+                //        fun serverMsg ->
+                //            dispatch (
+                //                LoginMsg (
+                //                    LoginPage.HubMsg (
+                //                            GameHub.Domain serverMsg
+                //                    )
+                //                )
+                //            )                        
+                //    )
+                //dispatch (HubServiceMsg hub)
                 )
 
         let loginModel, loginCmd = LoginPage.init ()
@@ -54,6 +67,10 @@ module App =
         let gameModel, gameCmd = GamePage.init
         {
             CurrentPage = PageHome
+            CurrentUser = None
+            Status = NotInGame
+            Players = []
+            Moves = []
             Home = homeModel
             Login = loginModel
             Game = gameModel
@@ -82,7 +99,7 @@ module App =
 
         | LoginMsg m ->
             match m with
-            | LoginPage.RequestConnection ->
+            | LoginPage.RequestConnection name ->
                 match model.HubService with
                 | Some hub ->
                     let cmd =
@@ -92,14 +109,14 @@ module App =
                                 return HubConnected
                             }
                         )
-                    model, cmd
+                    { model with CurrentUser = Some name }, cmd
                 | None ->
                     model, Cmd.none
             | _ ->
                 match model.HubService with
-                | Some hub ->
+                | Some _ ->
                     let updated, cmd, intention =
-                        LoginPage.update hub m model.Login
+                        LoginPage.update m model.Login
                     match intention with
                     | GoToGamePage ->
                         { model with CurrentPage = PageGame; Login = updated }, Cmd.map LoginMsg cmd
@@ -185,9 +202,9 @@ module App =
 
         | GameMsg m ->
             match model.HubService with
-            | Some hub ->
+            | Some _ ->
                 let updated, cmd, intention = 
-                    GamePage.update hub m model.Game
+                    GamePage.update m model.Game
                 match intention with
                 | GoToHomePage ->
                     { model with CurrentPage = PageHome; Game = updated }, Cmd.map GameMsg cmd
@@ -210,12 +227,63 @@ module App =
                         | None ->
                             { model with Game = updated },
                             Cmd.none 
+                | AppendCard card ->
+                    match model.HubService with
+                    | Some hub ->
+                        let cmdAppendCard =
+                            Cmd.ofAsyncMsg (async {
+                                try
+                                    do! hub.SendMove(card) |> Async.AwaitTask
+                                    return MessageSendToAllSucceeded
+                                with exn ->
+                                    return HubFailure exn.Message
+                            })
+                        { model with Game = updated },
+                        Cmd.batch [
+                            cmdAppendCard
+                            Cmd.map GameMsg cmd
+                        ]
+                    | None ->
+                        { model with Game = updated },
+                        Cmd.none
                 | _ -> { model with Game = updated }, Cmd.map GameMsg cmd
             | None ->
                 model, Cmd.none
 
         | HubConnected ->
-            model, Cmd.none
+            match model.CurrentUser with
+            | Some name ->
+                model, Cmd.ofMsg (SendJoingame name)
+            | None ->
+                model, Cmd.none
+
+        | SendJoingame name ->
+            match model.HubService with
+            | Some hub ->
+                let cmdJoinGame =
+                    Cmd.ofAsyncMsg (async {
+                        try
+                            do! hub.EnterGame(name) |> Async.AwaitTask
+                            return JoinGameConfirmed
+                        with exn ->
+                            return HubFailure exn.Message
+                    })
+                model, cmdJoinGame
+            | None ->
+                model, Cmd.none
+
+        | JoinGameConfirmed ->
+            { model with Status = InLobby }, Cmd.none
+
+        | DomainMsg domainMsg ->
+            match domainMsg with
+            | Messages.GameJoined players ->
+                { model with Status = InLobby; Players = players }, Cmd.none
+            | Messages.GameLeft ->
+                { model with Status = NotInGame; Players = [] }, Cmd.none
+            | Messages.MoveReceived move ->
+                // Here you would update the game state based on the received move
+                { model with Moves = move :: model.Moves}, Cmd.none
 
         | EnterGameSucceeded ->
             model, Cmd.none

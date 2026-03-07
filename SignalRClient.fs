@@ -86,7 +86,7 @@ type HubService(
             match hub with
                 | Some connection ->
                     do! connection.InvokeAsync("JoinGame", "game1", user)
-                    printfn "Entered game as: %s" user
+                    printfn "Entered Game1 as: %s" user
                 | None ->
                     printfn "Not connected to hub."
         }

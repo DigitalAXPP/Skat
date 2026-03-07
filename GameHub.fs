@@ -18,6 +18,7 @@ type Model = {
     Moves: string list
     Game: GameState
     Players: string list
+    GameId: int option
 }
 
 type Msg =
@@ -43,7 +44,8 @@ let init() =
         Status = Disconnected
         Moves = []
         Game = NotInGame
-        Players = []
+        Players = [] 
+        GameId = None
     }, Cmd.none    
 
 let update (hubService: HubService) msg model =

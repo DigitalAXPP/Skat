@@ -17,6 +17,9 @@ type Model = {
     PlayerOne: PlayerConfig
     PlayerTwo: PlayerConfig
     PlayerThree: PlayerConfig
+    FPlayer: PlayerState
+    SPlayer: PlayerState
+    TPlayer: PlayerState
 }
 
 type Msg =
@@ -27,6 +30,37 @@ type Msg =
     | RemoveCard of (PlayerId * Card)
     | WinningHand
     | TellAll of string
+    | AddSelectedCard of Card
+
+let declarefPlayer = 
+    {
+        PlayerId = 1
+        Seat = Forehand
+        Hand = []
+        CurrentBid = None
+        TricksWon = [[]]
+        IsDeclarer = false
+    }
+
+let declaresPlayer = 
+    {
+        PlayerId = 2
+        Seat = Middlehand
+        Hand = []
+        CurrentBid = None
+        TricksWon = [[]]
+        IsDeclarer = false
+    }
+
+let declaretPlayer = 
+    {
+        PlayerId = 3
+        Seat = Rearhand
+        Hand = []
+        CurrentBid = None
+        TricksWon = [[]]
+        IsDeclarer = false
+    }
 
 let init = 
     {
@@ -38,6 +72,9 @@ let init =
         PlayerOne = firstPlayer
         PlayerTwo = secondPlayer
         PlayerThree = thirdPlayer
+        FPlayer = declarefPlayer
+        SPlayer = declaresPlayer
+        TPlayer = declaretPlayer
     }, Cmd.none
 
 let assignHandToPlayers model (hands: GameSetup) =
@@ -62,7 +99,7 @@ let removeCardFromPlayer model (id: int) (card: Card) =
         | 3 when model.PlayerThree.Player = 3
             -> { model with PlayerThree.StartingHand = newHand}
 
-let update (hubService: HubService) msg model =
+let update msg model =
     match msg with
     | NextHomePage -> model, Cmd.none, GoToHomePage
     | SetCards -> (assignHandToPlayers model (dealInitialHand Deck)), Cmd.none, NoIntent
@@ -119,6 +156,8 @@ let update (hubService: HubService) msg model =
         newModel, Cmd.none, NoIntent
     | TellAll message ->
         model, Cmd.none, SendMessageToAll message
+    | AddSelectedCard card ->
+        model, Cmd.none, AppendCard (card.ToString())
 
 let view (hub: HubService option) model =
         VStack(spacing = 25.) {
@@ -158,4 +197,4 @@ let view (hub: HubService option) model =
                     ).onTapped(fun _ -> ToggleCards (Some [(model.PlayerThree.Player, item)]))
                 )
             }
-    }
+        }

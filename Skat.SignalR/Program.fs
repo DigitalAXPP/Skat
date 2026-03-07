@@ -53,6 +53,10 @@ type GameHub() =
 
     member this.SendMove (move: string) =
         task {
+            let msg = ServerMsg.MoveReceiving move
+            let dto = Transport.toDto msg
+            do! this.Clients.All.SendAsync("ServerMsg", dto)
+
             do! this.Clients.All.SendAsync("ReceiveMove", move)
         }
 
