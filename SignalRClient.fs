@@ -120,3 +120,14 @@ type HubService(
                 | None ->
                     printfn "Not connected to hub."
         }
+
+    member _.NewUser(name: string, email: string, passwordHash: string) =
+        task {
+            match hub with
+                | Some connection ->
+                    
+                    do! connection.InvokeAsync("NewAccount", name, email, passwordHash)
+                    printfn "New account created: %s" name
+                | None ->
+                    printfn "Not connected to hub."
+        }

@@ -11,7 +11,15 @@
   </PropertyGroup>
   
   <ItemGroup>
+    <Folder Include="Data\" />
     <Folder Include="Resources\Images\" />
+    <Compile Include="data\IDatabase.fs" />
+    <Compile Include="data\User.fs" />
+    <Compile Include="data\Migrations.fs" />
+    <Compile Include="data\Repository.fs" />
+    <Folder Include="Domain\" />
+    <Compile Include="domain\Database.fs" />
+    <Compile Include="domain\UserRepository.fs" />
     <Folder Include="Shared\" />
     <Compile Include="shared\SharedTypes.fs" />
     <Compile Include="shared\Messages.fs" />
@@ -36,6 +44,7 @@
     <PackageReference Include="Fabulous.Avalonia" Version="2.4.0" />
     <PackageReference Include="Avalonia.Desktop" Version="11.0.7" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.1" />
+    <PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Skat.Game\Skat.Game.fsproj" />

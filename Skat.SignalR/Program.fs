@@ -16,6 +16,10 @@ open Microsoft.Extensions.Logging
 open System.Collections.Concurrent
 open Microsoft.AspNetCore.SignalR
 open SharedTypes
+open Skat.Data
+open Skat.Data.Usermanagement
+open Skat.Database.SkatDB
+open Skat.Data.Repository
 
 module GameStore =
     let games = ConcurrentDictionary<string, ResizeArray<string>>()
@@ -26,9 +30,15 @@ module GameStore =
             players.Add playerName
         players
 
-type GameHub() =
+type GameHub (db: IDatabase) =
     inherit Hub()
 
+    member this.NewAccount (Name : string, Email : string, PasswordHash : string) =
+        task {
+            insert db { Id = 0; Name = Name; Email = Email; PasswordHash = PasswordHash } |> Async.StartImmediate
+            do! this.Clients.All.SendAsync("ReceiveMove", $"User added: {Name}")
+        }
+    
     member this.JoinGame (gameId: string, playerName: string) =
         task {
             do! this.Groups.AddToGroupAsync (this.Context.ConnectionId, gameId)
@@ -74,12 +84,14 @@ module Program =
         let builder = WebApplication.CreateBuilder(args)
 
         builder.Services
+            .AddSingleton<IDatabase, Database>()
             .AddSignalR() |> ignore
 
         let app = builder.Build()
+        let db = app.Services.GetRequiredService<IDatabase>()
+        db.Initialize() |> Async.StartImmediate
 
         app.UseHttpsRedirection()
-
         app.UseAuthorization()
         app.MapHub<GameHub>("/gamehub") |> ignore
 

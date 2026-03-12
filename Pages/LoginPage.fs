@@ -6,14 +6,23 @@ open Fabulous
 open SharedTypes
 open SignalRClient
 open Fabulous.Dispatcher
+open Skat.Data.Usermanagement
+open Skat.Database
 
 type Model = { 
     UserName: string
+    Id: int
+    Email: string
+    PasswordHash: string
+    Users: User list option
     Hub: GameHub.Model
 }
 
 type Msg =
-    | ChangeName of string
+    | ChangeUserName of string
+    | ChangeId of string
+    | ChangeEmail of string
+    | SetPassword of string
     | NextGamePage
     | HubMsg of GameHub.Msg
     | StartNewGame of string
@@ -21,17 +30,27 @@ type Msg =
     | SelectCard of string
     | TellAll of string
     | RequestConnection of string
+    | LoadUsers
+    | UsersLoaded of User list
+    | CreateUser
 
 let init () =
     let hubModel, hubCmd = GameHub.init()
     { 
         UserName = ""
+        Id = 0
+        Email = "test@test.com"
+        PasswordHash = ""
+        Users = None
         Hub = hubModel
     }, Cmd.map HubMsg hubCmd
 
 let update msg model =
     match msg with
-    | ChangeName n -> { model with UserName = n }, Cmd.none, NoIntent
+    | ChangeUserName n -> { model with UserName = n }, Cmd.none, NoIntent
+    | ChangeId number -> { model with Id = (System.Int32.Parse(number))}, Cmd.none, NoIntent
+    | ChangeEmail email -> { model with Email = email }, Cmd.none, NoIntent
+    | SetPassword password -> { model with PasswordHash = password }, Cmd.none, NoIntent
     | RequestConnection name ->
         model, Cmd.none, NoIntent
     | NextGamePage -> model, Cmd.none, GoToGamePage
@@ -43,6 +62,29 @@ let update msg model =
         model, Cmd.none, SendSelectedCard card
     | TellAll message ->
         model, Cmd.none, SendMessageToAll message
+    | LoadUsers ->
+        //let cmd = 
+        //    Cmd.ofAsyncMsg (async {
+        //        SkatDB.init () |> Async.RunSynchronously
+        //        let! users = Skat.UserRepository.Generics.getUsers ()
+        //        return UsersLoaded users
+        //    } )
+        model, Cmd.none, NoIntent
+    | UsersLoaded users ->
+        let updatedModel =
+            match users with
+            | [] -> model
+            | _ -> { model with Users = Some users}
+        updatedModel, Cmd.none, NoIntent
+    | CreateUser ->
+        //let cmd =
+        //    Cmd.ofAsyncMsg (async {
+        //        let newUser = { Id = model.Id; Name = model.UserName; Email = model.Email; PasswordHash = model.PasswordHash }
+        //        do! Skat.UserRepository.Generics.insertUser newUser
+        //        let! users = Skat.UserRepository.Generics.getUsers ()
+        //        return UsersLoaded users
+        //    })
+        model, Cmd.none, AddUser (model.UserName, model.Email, model.PasswordHash)
 
 let view (hub: HubService option) model =
     VStack() {
@@ -51,7 +93,12 @@ let view (hub: HubService option) model =
         TextBlock($"Hub status: {model.Hub.Status}")
         TextBlock($"Moves: {model.Hub.Moves}")
         Button("Connect to hub.", RequestConnection model.UserName)
-        TextBox(model.UserName, ChangeName)
+        TextBox(model.UserName, ChangeUserName)
+        TextBox(model.Id.ToString(), ChangeId)
+        TextBox(model.Email, ChangeEmail)
+        TextBox(model.PasswordHash, SetPassword)
+        Button("Load Users", LoadUsers)
+        Button("Add User", CreateUser)
         Button("Start New Game", StartNewGame model.UserName)
         Button("Send Message to All", TellAll model.UserName)
         Button("Quit Game", EndGame model.UserName)

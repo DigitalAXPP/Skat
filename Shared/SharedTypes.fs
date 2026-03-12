@@ -21,6 +21,7 @@ type Intent =
     | EndGameRequested of string
     | SendSelectedCard of string
     | AppendCard of string
+    | AddUser of string * string * string
     | SendMessageToAll of string
     /// Navigate to the login page where the user can enter credentials or authenticate.
     | GoToLoginPage
