@@ -25,7 +25,6 @@
     <Compile Include="shared\Messages.fs" />
     <Compile Include="shared\Transport.fs" />
     <Compile Include="SignalRClient.fs" />
-    <Compile Include="GameHub.fs" />
     <Folder Include="Pages\" />
     <Compile Include="pages\HomePage.fs" />
     <Compile Include="pages\LoginPage.fs" />

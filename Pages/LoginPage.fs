@@ -15,7 +15,6 @@ type Model = {
     Email: string
     PasswordHash: string
     Users: User list option
-    Hub: GameHub.Model
 }
 
 type Msg =
@@ -24,7 +23,6 @@ type Msg =
     | ChangeEmail of string
     | SetPassword of string
     | NextGamePage
-    | HubMsg of GameHub.Msg
     | StartNewGame of string
     | EndGame of string
     | SelectCard of string
@@ -35,15 +33,13 @@ type Msg =
     | CreateUser
 
 let init () =
-    let hubModel, hubCmd = GameHub.init()
     { 
         UserName = ""
         Id = 0
         Email = "test@test.com"
         PasswordHash = ""
         Users = None
-        Hub = hubModel
-    }, Cmd.map HubMsg hubCmd
+    }, Cmd.none
 
 let update msg model =
     match msg with
@@ -90,8 +86,6 @@ let view (hub: HubService option) model =
     VStack() {
         TextBlock($"Hub connection: {hub.Value.IsConnected}")
         TextBlock($"Second Page: {model.UserName}")
-        TextBlock($"Hub status: {model.Hub.Status}")
-        TextBlock($"Moves: {model.Hub.Moves}")
         Button("Connect to hub.", RequestConnection model.UserName)
         TextBox(model.UserName, ChangeUserName)
         TextBox(model.Id.ToString(), ChangeId)
