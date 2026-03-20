@@ -38,13 +38,10 @@ module Program =
         let builder = WebApplication.CreateBuilder(args)
 
         builder.Services.AddControllers()
-        //builder.Services.AddScoped<IUserRepository, UserRepository>() |> ignore
-        //builder.Services.AddScoped<ISessionRepository, SessionRepository>() |> ignore
         builder.Services.AddScoped<AuthService>() |> ignore
 
         let dbPath = Path.Combine(builder.Environment.ContentRootPath, "auth.db")
         let connectionString = $"Data Source={dbPath}"
-        //let connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
         builder.Services.AddScoped<IUserRepository>(fun _ ->
             UserRepository(connectionString) :> IUserRepository)
         builder.Services.AddScoped<ISessionRepository>(fun _ ->
@@ -56,16 +53,7 @@ module Program =
 
         app.UseAuthorization()
         app.MapControllers()
-        //app.MapPost("/login", Func<HttpContext, Task<IResult>> (fun ctx -> task {
-        //    let! req = ctx.Request.ReadFromJsonAsync<LoginRequest>()
 
-        //    match req with
-        //    | r when r.username = null || r.password = null ->
-        //        return Results.BadRequest()
-        //    | r when r.username = "test" && r.password = "1234" -> 
-        //        return Results.Ok({| token = "demo-token" |})
-        //    | _ -> return Results.Unauthorized()
-        //}))
         mapRegisterEndpoint app
 
         app.Run()

@@ -46,14 +46,5 @@ type AuthService
                 | Ok () ->
                     let! token = sessions.CreateSession user.Id
                     return Ok token
-            //if not exists then
-            //    return Error "Invalid username or password"
-            //else
-            //    // In a real application, you would retrieve the user record and verify the password hash.
-            //    // For simplicity, we just check if the username is "test" and the password is "1234".
-            //    if username = "test" && password = "1234" then
-            //        return Ok "demo-token"
-            //    else
-            //        return Error "Invalid username or password"
         }
         
