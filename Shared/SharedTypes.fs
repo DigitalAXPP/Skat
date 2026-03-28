@@ -23,6 +23,10 @@ type Intent =
     | AppendCard of string
     | AddUser of string * string * string
     | SendMessageToAll of string
+    | ForwardUsernameToAuth of string
+    | ForwardPasswordToAuth of string
+    | LoginToAuth of string * string
+    | NavigateTo of Page
     /// Navigate to the login page where the user can enter credentials or authenticate.
     | GoToLoginPage
     /// Navigate to the game page where the main gameplay or game UI is presented.

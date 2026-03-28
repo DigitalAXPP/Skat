@@ -49,7 +49,7 @@ let update msg model =
     | SetPassword password -> { model with PasswordHash = password }, Cmd.none, NoIntent
     | RequestConnection name ->
         model, Cmd.none, NoIntent
-    | NextGamePage -> model, Cmd.none, GoToGamePage
+    | NextGamePage -> model, Cmd.none, NavigateTo PageGame
     | StartNewGame name ->
         { model with UserName = name }, Cmd.none, StartGameRequested name
     | EndGame name ->

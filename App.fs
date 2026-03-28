@@ -7,16 +7,34 @@ open Fabulous.Avalonia
 open type Fabulous.Avalonia.View
 open SharedTypes
 open SignalRClient
+open Domain
 
 module App =
+
+    type authState =
+        | NotAuthenticated
+        | Authenticating
+        | Authenticated of User
+
+    let canAccess page authState =
+        match page, authState with
+        | PageHome, _ -> true
+        | PageLogin, _ -> true
+        | _, Authenticated _ -> true
+        | _, NotAuthenticated -> false
+        | _, Authenticating -> false
+
     
     type Model =
         {
             CurrentPage: Page
             CurrentUser: string option
+            AuthenticatedUser: User option
+            Auth: authState
             Status: GameState
             Players: string list
             Moves: string list
+            AuthModel: Domain.Model
             Home: HomePage.Model
             Login: LoginPage.Model
             Game: GamePage.Model
@@ -30,6 +48,7 @@ module App =
         | GameMsg of GamePage.Msg
         | HubServiceMsg of HubService
         | DomainMsg of Messages.DomainMsg
+        | AuthMsg of Domain.Msg
         | HubConnected
         | SendJoingame of string
         | JoinGameConfirmed
@@ -65,12 +84,16 @@ module App =
         let loginModel, loginCmd = LoginPage.init ()
         let homeModel, homeCmd = HomePage.init
         let gameModel, gameCmd = GamePage.init
+        let authModel = Domain.init
         {
             CurrentPage = PageHome
             CurrentUser = None
+            AuthenticatedUser = None
+            Auth = NotAuthenticated
             Status = NotInGame
             Players = []
             Moves = []
+            AuthModel = authModel
             Home = homeModel
             Login = loginModel
             Game = gameModel
@@ -83,17 +106,57 @@ module App =
                 Cmd.map GameMsg gameCmd
             ]
 
+    let navigateToPage model page authState =
+        match canAccess page authState with
+        | true -> { model with CurrentPage = page }
+        | false -> { model with CurrentPage = PageLogin }
+
     let update msg model =
         match msg with
+        | AuthMsg (LoginSuccess user) ->
+            { model with
+                AuthenticatedUser = Some user
+                Auth = Authenticated user
+            }, Cmd.none
+        | AuthMsg authMsg ->
+            let updatedAuth, cmd = Skat.Auth.Update.update model.AuthModel authMsg
+            { model with AuthModel = updatedAuth }, Cmd.map AuthMsg cmd
         | HubServiceMsg hub ->
             { model with HubService = Some hub }, Cmd.none
-        | NavigateToPage p -> { model with CurrentPage = p }, Cmd.none
+        | NavigateToPage p -> 
+            let newModel = navigateToPage model p model.Auth
+            newModel, Cmd.none
 
         | HomeMsg m ->
             let updated, cmd, intention = HomePage.update m model.Home
             match intention with
-            | GoToLoginPage ->
-                { model with CurrentPage = PageLogin; Home = updated }, Cmd.map HomeMsg cmd
+            | NavigateTo page ->
+                let newModel = 
+                    model
+                    |> fun m -> { m with Home = updated }
+                    |> fun m -> navigateToPage m page m.Auth
+                newModel, Cmd.map HomeMsg cmd
+            | ForwardUsernameToAuth username ->
+                let cmdAuth = Cmd.ofMsg (AuthMsg (Domain.SetUsername username))
+                { model with Home = updated },
+                Cmd.batch [
+                    cmdAuth
+                    Cmd.map HomeMsg cmd
+                ]
+            | ForwardPasswordToAuth password ->
+                let cmdAuth = Cmd.ofMsg (AuthMsg (Domain.SetPassword password))
+                { model with Home = updated },
+                Cmd.batch [
+                    cmdAuth
+                    Cmd.map HomeMsg cmd
+                ]
+            | LoginToAuth (username, password) ->
+                let cmdAuth = Cmd.ofMsg (AuthMsg (Domain.LoginRequested (username, password)))
+                { model with Home = updated },
+                Cmd.batch [
+                    cmdAuth
+                    Cmd.map HomeMsg cmd
+                ]
             | _ ->
                 { model with Home = updated }, Cmd.map HomeMsg cmd
 
@@ -118,8 +181,12 @@ module App =
                     let updated, cmd, intention =
                         LoginPage.update m model.Login
                     match intention with
-                    | GoToGamePage ->
-                        { model with CurrentPage = PageGame; Login = updated }, Cmd.map LoginMsg cmd
+                    | NavigateTo page ->
+                        let newModel =
+                            model
+                            |> fun m -> { m with Login = updated }
+                            |> fun m -> navigateToPage m page model.Auth
+                        newModel, Cmd.map LoginMsg cmd
                     | StartGameRequested name ->
                         match model.HubService with
                         | Some hub ->

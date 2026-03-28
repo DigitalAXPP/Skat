@@ -29,3 +29,30 @@ type User =
         Username : Username
         PasswordHash : Passwordhash
     }
+
+type AuthState =
+    | LoggedOut
+    | LoggingIn
+    | LoggedIn of User
+    | LoginFailed of string
+
+type Model = {
+    Auth: AuthState
+    Username: string
+    Password: string
+}
+
+let init =
+    { 
+        Auth = LoggedOut
+        Username = ""
+        Password = ""
+    }
+
+type Msg =
+    | SetUsername of string
+    | SetPassword of string
+    | LoginRequested of username:string * password:string
+    | LoginSuccess of User
+    | LoginError of string
+    | Logout

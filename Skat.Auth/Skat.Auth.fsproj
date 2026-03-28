@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -15,7 +15,9 @@
     <Folder Include="Services\" />
     <Compile Include="services\AuthService.fs" />
     <Folder Include="API\" />
+    <Compile Include="api\EndUserEndpoints.fs" />
     <Compile Include="api\RegisterEndpoint.fs" />
+    <Compile Include="Update.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
@@ -26,11 +28,8 @@
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
     <PackageReference Include="Dapper" Version="2.1.72" />
+    <PackageReference Include="Fabulous" Version="2.4.1" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.5" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Skat.fsproj" />
   </ItemGroup>
 
 </Project>
