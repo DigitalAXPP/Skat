@@ -1,6 +1,6 @@
 namespace Skat.UserRepository
 
-open Skat.Data.Usermanagement
+//open Skat.Data.Usermanagement
 open Skat.Database
 
 //module Generics =

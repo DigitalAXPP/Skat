@@ -1,16 +1,16 @@
 namespace Skat.Data
 
 open SQLite
-open Usermanagement
+//open Usermanagement
 
-module Migrations =
+//module Migrations =
     
-    let private createTables (conn : SQLiteAsyncConnection) = async {
-            let _ = conn.CreateTableAsync<User>()
-                    |> Async.AwaitTask
-            return ()
-        }
+//    let private createTables (conn : SQLiteAsyncConnection) = async {
+//            let _ = conn.CreateTableAsync<User>()
+//                    |> Async.AwaitTask
+//            return ()
+//        }
 
-    let run (conn : SQLiteAsyncConnection) = async {
-        do! createTables conn
-    }
+//    let run (conn : SQLiteAsyncConnection) = async {
+//        do! createTables conn
+//    }

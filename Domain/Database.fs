@@ -3,23 +3,23 @@ namespace Skat.Database
 open SQLite
 open System.IO
 open System
-open Skat.Data.Usermanagement
+//open Skat.Data.Usermanagement
 open Skat.Data
 
-module SkatDB =
+//module SkatDB =
     
-    type Database() =
-        let dbPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "app.db")
+//    type Database() =
+//        let dbPath = Path.Combine(
+//            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+//            "app.db")
 
-        let connection = lazy SQLiteAsyncConnection(dbPath)
+//        let connection = lazy SQLiteAsyncConnection(dbPath)
 
-        interface IDatabase with
-            member _.Connection = connection.Value
-            member _.Initialize() = async {
-                do! Migrations.run connection.Value
-            }
+//        interface IDatabase with
+//            member _.Connection = connection.Value
+//            member _.Initialize() = async {
+//                do! Migrations.run connection.Value
+//            }
 
     //let getConnection () = connection.Value
 

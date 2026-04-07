@@ -17,9 +17,9 @@ open System.Collections.Concurrent
 open Microsoft.AspNetCore.SignalR
 open SharedTypes
 open Skat.Data
-open Skat.Data.Usermanagement
-open Skat.Database.SkatDB
-open Skat.Data.Repository
+//open Skat.Data.Usermanagement
+//open Skat.Database.SkatDB
+//open Skat.Data.Repository
 open Skat.SignalR.Persistence.GameRoom
 open Skat.SignalR.Persistence.DbInitiliaziation
 
