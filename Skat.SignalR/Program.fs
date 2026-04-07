@@ -20,6 +20,8 @@ open Skat.Data
 open Skat.Data.Usermanagement
 open Skat.Database.SkatDB
 open Skat.Data.Repository
+open Skat.SignalR.Persistence.GameRoom
+open Skat.SignalR.Persistence.DbInitiliaziation
 
 module GameStore =
     let games = ConcurrentDictionary<string, ResizeArray<string>>()
@@ -30,13 +32,22 @@ module GameStore =
             players.Add playerName
         players
 
-type GameHub (db: IDatabase) =
+type GameHub (
+    //db: IDatabase,
+    repo: IGameRoomRepository) =
     inherit Hub()
 
-    member this.NewAccount (Name : string, Email : string, PasswordHash : string) =
+    //member this.NewAccount (Name : string, Email : string, PasswordHash : string) =
+    //    task {
+    //        insert db { Id = 0; Name = Name; Email = Email; PasswordHash = PasswordHash } |> Async.StartImmediate
+    //        do! this.Clients.All.SendAsync("ReceiveMove", $"User added: {Name}")
+    //    }
+
+    member this.AddGameRoom () =
         task {
-            insert db { Id = 0; Name = Name; Email = Email; PasswordHash = PasswordHash } |> Async.StartImmediate
-            do! this.Clients.All.SendAsync("ReceiveMove", $"User added: {Name}")
+            let! result = repo.InsertRoom()
+            do! this.Clients.All.SendAsync("CreateRoom", $"New Room created: {result}")
+            return result
         }
     
     member this.JoinGame (gameId: string, playerName: string) =
@@ -83,13 +94,19 @@ module Program =
 
         let builder = WebApplication.CreateBuilder(args)
 
+        let dbPath = Path.Combine(builder.Environment.ContentRootPath, "game.db")
+        let connectionString = $"Data Source={dbPath}"
         builder.Services
-            .AddSingleton<IDatabase, Database>()
+            .AddScoped<IGameRoomRepository>(fun _ ->
+                GameRoomRepository (connectionString) :> IGameRoomRepository)
+            //.AddSingleton<IDatabase, Database>()
             .AddSignalR() |> ignore
 
         let app = builder.Build()
-        let db = app.Services.GetRequiredService<IDatabase>()
-        db.Initialize() |> Async.StartImmediate
+        //let db = app.Services.GetRequiredService<IDatabase>()
+        //db.Initialize() |> Async.StartImmediate
+
+        initialize(connectionString)
 
         app.UseHttpsRedirection()
         app.UseAuthorization()

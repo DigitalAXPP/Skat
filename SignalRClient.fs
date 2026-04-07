@@ -58,6 +58,9 @@ type HubService(
                     connection.On<string seq>("PlayersUpdate", fun players ->
                         printf "Players updated: %A" (players |> Seq.toList)) |> ignore
 
+                    connection.On<int>("CreateRoom", fun roomId ->
+                        printf "New room created: %d" roomId) |> ignore
+
                     connection.On<ServerMsgDto>("ServerMsg", fun (dto: ServerMsgDto) ->
                         let domainMsg = Transport.toDomain dto
                         dispatch domainMsg
@@ -128,6 +131,16 @@ type HubService(
                     
                     do! connection.InvokeAsync("NewAccount", name, email, passwordHash)
                     printfn "New account created: %s" name
+                | None ->
+                    printfn "Not connected to hub."
+        }
+
+    member _.CreateRoom() =
+        task {
+            match hub with
+                | Some connection ->
+                    do! connection.InvokeAsync("AddGameRoom")
+                    printfn "Room added."
                 | None ->
                     printfn "Not connected to hub."
         }

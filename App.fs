@@ -279,6 +279,22 @@ module App =
                                 cmdAddUser
                                 Cmd.map LoginMsg cmd
                             ]
+                    | NewRoom ->
+                        match model.HubService with
+                        | Some hub ->
+                            let cmdNewRoom =
+                                Cmd.ofAsyncMsg (async {
+                                    try
+                                        do! hub.CreateRoom() |> Async.AwaitTask
+                                        return EnterGameSucceeded
+                                    with exn ->
+                                        return HubFailure exn.Message
+                                })
+                            { model with Login = updated },
+                            Cmd.batch [
+                                cmdNewRoom
+                                Cmd.map LoginMsg cmd
+                            ]
                     | _ -> { model with Login = updated }, Cmd.map LoginMsg cmd
                 | None ->
                     model, Cmd.none

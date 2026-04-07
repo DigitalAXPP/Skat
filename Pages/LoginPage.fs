@@ -31,6 +31,7 @@ type Msg =
     | LoadUsers
     | UsersLoaded of User list
     | CreateUser
+    | NewGameRoom
 
 let init () =
     { 
@@ -81,6 +82,8 @@ let update msg model =
         //        return UsersLoaded users
         //    })
         model, Cmd.none, AddUser (model.UserName, model.Email, model.PasswordHash)
+    | NewGameRoom ->
+        model, Cmd.none, NewRoom
 
 let view (hub: HubService option) model =
     VStack() {
@@ -97,5 +100,6 @@ let view (hub: HubService option) model =
         Button("Send Message to All", TellAll model.UserName)
         Button("Quit Game", EndGame model.UserName)
         Button("Add move", SelectCard "right")
+        Button("Create Game Room", NewGameRoom)
         Button("Go to Game Page", NextGamePage)
     }
