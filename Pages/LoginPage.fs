@@ -6,7 +6,6 @@ open Fabulous
 open SharedTypes
 open SignalRClient
 open Fabulous.Dispatcher
-//open Skat.Data.Usermanagement
 open Skat.Database
 
 type Model = { 
@@ -14,7 +13,6 @@ type Model = {
     Id: int
     Email: string
     PasswordHash: string
-    //Users: User list option
 }
 
 type Msg =
@@ -28,9 +26,6 @@ type Msg =
     | SelectCard of string
     | TellAll of string
     | RequestConnection of string
-    //| LoadUsers
-    //| UsersLoaded of User list
-    //| CreateUser
     | NewGameRoom
 
 let init () =
@@ -39,7 +34,6 @@ let init () =
         Id = 0
         Email = "test@test.com"
         PasswordHash = ""
-        //Users = None
     }, Cmd.none
 
 let update msg model =
@@ -59,29 +53,6 @@ let update msg model =
         model, Cmd.none, SendSelectedCard card
     | TellAll message ->
         model, Cmd.none, SendMessageToAll message
-    //| LoadUsers ->
-        //let cmd = 
-        //    Cmd.ofAsyncMsg (async {
-        //        SkatDB.init () |> Async.RunSynchronously
-        //        let! users = Skat.UserRepository.Generics.getUsers ()
-        //        return UsersLoaded users
-        //    } )
-        //model, Cmd.none, NoIntent
-    //| UsersLoaded users ->
-    //    let updatedModel =
-    //        match users with
-    //        | [] -> model
-    //        | _ -> { model with Users = Some users}
-    //    updatedModel, Cmd.none, NoIntent
-    //| CreateUser ->
-        //let cmd =
-        //    Cmd.ofAsyncMsg (async {
-        //        let newUser = { Id = model.Id; Name = model.UserName; Email = model.Email; PasswordHash = model.PasswordHash }
-        //        do! Skat.UserRepository.Generics.insertUser newUser
-        //        let! users = Skat.UserRepository.Generics.getUsers ()
-        //        return UsersLoaded users
-        //    })
-        //model, Cmd.none, AddUser (model.UserName, model.Email, model.PasswordHash)
     | NewGameRoom ->
         model, Cmd.none, NewRoom
 
@@ -94,8 +65,6 @@ let view (hub: HubService option) model =
         TextBox(model.Id.ToString(), ChangeId)
         TextBox(model.Email, ChangeEmail)
         TextBox(model.PasswordHash, SetPassword)
-        //Button("Load Users", LoadUsers)
-        //Button("Add User", CreateUser)
         Button("Start New Game", StartNewGame model.UserName)
         Button("Send Message to All", TellAll model.UserName)
         Button("Quit Game", EndGame model.UserName)

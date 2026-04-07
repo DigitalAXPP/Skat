@@ -10,13 +10,7 @@ module Program =
 
     [<CompiledName "BuildAvaloniaApp">]
     let buildAvaloniaApp () =
-        
-        //let hubService = HubService(
-        //    "http://localhost:5109/gamehub",
-        //    fun serverMsg ->
-        //        Program.dispatch (AppMsg.ServerMsg serverMsg)
-        //)
-        
+                
         AppBuilder
             .Configure(fun () ->
                 let app = Program.startApplication App.program //hubService)

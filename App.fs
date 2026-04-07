@@ -67,18 +67,6 @@ module App =
                             dispatch (DomainMsg domainMsg)                        
                     )
                 dispatch (HubServiceMsg hub)
-                //    HubService(
-                //        "http://localhost:5109/gamehub",
-                //        fun serverMsg ->
-                //            dispatch (
-                //                LoginMsg (
-                //                    LoginPage.HubMsg (
-                //                            GameHub.Domain serverMsg
-                //                    )
-                //                )
-                //            )                        
-                //    )
-                //dispatch (HubServiceMsg hub)
                 )
 
         let loginModel, loginCmd = LoginPage.init ()
@@ -263,22 +251,6 @@ module App =
                         | None ->
                             { model with Login = updated },
                             Cmd.none
-                    //| AddUser (name, email, password) ->
-                    //    match model.HubService with
-                    //    | Some hub ->
-                    //        let cmdAddUser =
-                    //            Cmd.ofAsyncMsg (async {
-                    //                try
-                    //                    do! hub.NewUser(name, email, password) |> Async.AwaitTask
-                    //                    return EnterGameSucceeded
-                    //                with exn ->
-                    //                    return HubFailure exn.Message
-                    //            })
-                    //        { model with Login = updated },
-                    //        Cmd.batch [
-                    //            cmdAddUser
-                    //            Cmd.map LoginMsg cmd
-                    //        ]
                     | NewRoom ->
                         match model.HubService with
                         | Some hub ->

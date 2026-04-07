@@ -21,7 +21,6 @@ type Intent =
     | EndGameRequested of string
     | SendSelectedCard of string
     | AppendCard of string
-    //| AddUser of string * string * string
     | NewRoom
     | SendMessageToAll of string
     | ForwardUsernameToAuth of string
