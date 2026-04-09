@@ -9,11 +9,12 @@ open SharedTypes
 //        Move: string option
 //        RoomId: int option
 //    }
-type ServerMsgDto =
-    | JoinGame of players : string list
-    | MoveReceiving of move : string
-    | QuitGame
-    | NewGameRoom of roomid : int
+//type ServerMsgDto =
+//    | JoinGame of players : string list
+//    | MoveReceiving of move : string
+//    | QuitGame
+//    | NewGameRoom of roomid : int
+//    | ShareClientMessage of msg : string
 
 //let toDto (msg: ServerMsg) =
 //    match msg with

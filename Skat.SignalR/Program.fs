@@ -42,7 +42,8 @@ type GameHub (
             //let dto = Transport.toDto msg
             do! this.Clients.All.SendAsync("ServerMsg", ServerMsg.NewGameRoom result)
 
-            do! this.Clients.All.SendAsync("ReceiveMove", result)
+            do! this.Clients.All.SendAsync("ServerMsg", ServerMsg.ShareMessage $"New room id is {result}")
+            //do! this.Clients.All.SendAsync("ReceiveMove", result)
             //do! this.Clients.All.SendAsync("CreateRoom", $"New Room created: {result}")
             //return result
         }

@@ -358,6 +358,10 @@ module App =
             | Messages.GameRoomAdded id ->
                 // Handle new game room added if needed
                 model, Cmd.none
+            | Messages.ShareClientMsg msg ->
+                printfn "Received shared client message: %s" msg
+                // Handle shared client message if needed
+                model, Cmd.none
 
         | EnterGameSucceeded ->
             model, Cmd.none

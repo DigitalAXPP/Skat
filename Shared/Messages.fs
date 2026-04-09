@@ -14,5 +14,6 @@ type DomainMsg =
     | MoveReceived of string
 
     | GameRoomAdded of int
+    | ShareClientMsg of string
 
     | ConnectionHubFailed of string

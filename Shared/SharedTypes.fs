@@ -46,6 +46,7 @@ type ServerMsg =
     | JoinGame of string list
     | QuitGame
     | NewGameRoom of int
+    | ShareMessage of string
 
 type GameState =
     | InGame
