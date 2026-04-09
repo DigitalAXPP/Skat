@@ -355,6 +355,9 @@ module App =
             | Messages.MoveReceived move ->
                 // Here you would update the game state based on the received move
                 { model with Moves = move :: model.Moves}, Cmd.none
+            | Messages.GameRoomAdded id ->
+                // Handle new game room added if needed
+                model, Cmd.none
 
         | EnterGameSucceeded ->
             model, Cmd.none

@@ -1,36 +1,37 @@
 module SignalRClient
 
 open Microsoft.AspNetCore.SignalR.Client
+open HubMethods
 open SharedTypes
 open Messages
 open Transport
 
-let connect (hubUrl : string) (dispatch : ServerMsg -> unit) =
-    task {
-        let hub =
-            HubConnectionBuilder()
-                .WithUrl(hubUrl)
-                .WithAutomaticReconnect()
-                .Build()
+//let connect (hubUrl : string) (dispatch : ServerMsg -> unit) =
+//    task {
+//        let hub =
+//            HubConnectionBuilder()
+//                .WithUrl(hubUrl)
+//                .WithAutomaticReconnect()
+//                .Build()
 
-        hub.On<string>("ReceiveMove", fun move ->
-            printf "New move: %s" move) |> ignore
+//        hub.On<string>("ReceiveMove", fun move ->
+//            printf "New move: %s" move) |> ignore
 
-        hub.On<string seq>("PlayersUpdate", fun players ->
-            printf "Players updated: %A" (players |> Seq.toList)) |> ignore
+//        hub.On<string seq>("PlayersUpdate", fun players ->
+//            printf "Players updated: %A" (players |> Seq.toList)) |> ignore
 
-        do! hub.StartAsync()
-        printf "Connected to %s" hubUrl
-        return hub
-    }
+//        do! hub.StartAsync()
+//        printf "Connected to %s" hubUrl
+//        return hub
+//    }
 
-let disconnect (hub: HubConnection) =
-    task {
-        if not (isNull hub) then
-            do! hub.StopAsync()
-            do! hub.DisposeAsync().AsTask()
-            printfn "Hub disconnected."
-    }
+//let disconnect (hub: HubConnection) =
+//    task {
+//        if not (isNull hub) then
+//            do! hub.StopAsync()
+//            do! hub.DisposeAsync().AsTask()
+//            printfn "Hub disconnected."
+//    }
 
 type HubService(
     hubUrl: string,
@@ -58,12 +59,13 @@ type HubService(
                     connection.On<string seq>("PlayersUpdate", fun players ->
                         printf "Players updated: %A" (players |> Seq.toList)) |> ignore
 
-                    connection.On<int>("CreateRoom", fun roomId ->
-                        printf "New room created: %d" roomId) |> ignore
+                    //connection.On<int>("CreateRoom", fun roomId ->
+                    //    printf "New room created: %d" roomId) |> ignore
 
-                    connection.On<ServerMsgDto>("ServerMsg", fun (dto: ServerMsgDto) ->
-                        let domainMsg = Transport.toDomain dto
-                        dispatch domainMsg
+                    connection.On<ServerMsg>(ServerMsg, fun (dto: ServerMsg) ->
+                        //let domainMsg = Transport.toDomain dto
+                        //dispatch domainMsg
+                        dispatch (Transport.toDomainMsg dto)
                     ) |> ignore
 
                     do! connection.StartAsync()
@@ -124,16 +126,16 @@ type HubService(
                     printfn "Not connected to hub."
         }
 
-    member _.NewUser(name: string, email: string, passwordHash: string) =
-        task {
-            match hub with
-                | Some connection ->
+    //member _.NewUser(name: string, email: string, passwordHash: string) =
+    //    task {
+    //        match hub with
+    //            | Some connection ->
                     
-                    do! connection.InvokeAsync("NewAccount", name, email, passwordHash)
-                    printfn "New account created: %s" name
-                | None ->
-                    printfn "Not connected to hub."
-        }
+    //                do! connection.InvokeAsync("NewAccount", name, email, passwordHash)
+    //                printfn "New account created: %s" name
+    //            | None ->
+    //                printfn "Not connected to hub."
+    //    }
 
     member _.CreateRoom() =
         task {

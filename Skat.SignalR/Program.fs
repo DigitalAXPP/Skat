@@ -19,6 +19,7 @@ open SharedTypes
 open Skat.Data
 open Skat.SignalR.Persistence.GameRoom
 open Skat.SignalR.Persistence.DbInitiliaziation
+open System.Text.Json.Serialization
 
 module GameStore =
     let games = ConcurrentDictionary<string, ResizeArray<string>>()
@@ -36,8 +37,14 @@ type GameHub (
     member this.AddGameRoom () =
         task {
             let! result = repo.InsertRoom()
-            do! this.Clients.All.SendAsync("CreateRoom", $"New Room created: {result}")
-            return result
+
+            //let msg = ServerMsg.NewGameRoom result
+            //let dto = Transport.toDto msg
+            do! this.Clients.All.SendAsync("ServerMsg", ServerMsg.NewGameRoom result)
+
+            do! this.Clients.All.SendAsync("ReceiveMove", result)
+            //do! this.Clients.All.SendAsync("CreateRoom", $"New Room created: {result}")
+            //return result
         }
     
     member this.JoinGame (gameId: string, playerName: string) =
@@ -45,9 +52,9 @@ type GameHub (
             do! this.Groups.AddToGroupAsync (this.Context.ConnectionId, gameId)
             let players = GameStore.addPlayer gameId playerName
 
-            let msg = ServerMsg.JoinGame (List.ofSeq players)
-            let dto = Transport.toDto msg
-            do! this.Clients.Group(gameId).SendAsync("ServerMsg", dto)
+            //let msg = ServerMsg.JoinGame (List.ofSeq players)
+            //let dto = Transport.toDto msg
+            do! this.Clients.Group(gameId).SendAsync("ServerMsg", ServerMsg.JoinGame (List.ofSeq players))
 
             do! this.Clients.Group(gameId).SendAsync("PlayersUpdate", players)
         }
@@ -64,9 +71,9 @@ type GameHub (
 
     member this.SendMove (move: string) =
         task {
-            let msg = ServerMsg.MoveReceiving move
-            let dto = Transport.toDto msg
-            do! this.Clients.All.SendAsync("ServerMsg", dto)
+            //let msg = ServerMsg.MoveReceiving move
+            //let dto = Transport.toDto msg
+            do! this.Clients.All.SendAsync("ServerMsg", ServerMsg.MoveReceiving move)
 
             do! this.Clients.All.SendAsync("ReceiveMove", move)
         }
@@ -89,7 +96,10 @@ module Program =
         builder.Services
             .AddScoped<IGameRoomRepository>(fun _ ->
                 GameRoomRepository (connectionString) :> IGameRoomRepository)
-            .AddSignalR() |> ignore
+            .AddSignalR()
+            .AddJsonProtocol(fun options ->
+                options.PayloadSerializerOptions.Converters.Add(JsonFSharpConverter()))
+                |> ignore
 
         let app = builder.Build()
 

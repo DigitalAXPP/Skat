@@ -13,4 +13,6 @@ type DomainMsg =
     | GameLeft
     | MoveReceived of string
 
+    | GameRoomAdded of int
+
     | ConnectionHubFailed of string
