@@ -9,12 +9,12 @@ open SharedTypes
 //        Move: string option
 //        RoomId: int option
 //    }
-//type ServerMsgDto =
-//    | JoinGame of players : string list
-//    | MoveReceiving of move : string
-//    | QuitGame
-//    | NewGameRoom of roomid : int
-//    | ShareClientMessage of msg : string
+type ServerMsgDto =
+    | JoinGame of players : string list
+    | MoveReceiving of move : string
+    | QuitGame
+    | NewGameRoom of roomid : int
+    | ShareClientMessage of msg : string
 
 //let toDto (msg: ServerMsg) =
 //    match msg with
@@ -57,14 +57,16 @@ open SharedTypes
 
 let toDomainMsg serverMsg =
     match serverMsg with
-    | ServerMsg.JoinGame players ->
+    | JoinGame players ->
         Messages.GameJoined players
-    | ServerMsg.QuitGame ->
+    | QuitGame ->
         Messages.GameLeft
-    | ServerMsg.MoveReceiving move ->
+    | MoveReceiving move ->
         Messages.MoveReceived move
-    | ServerMsg.NewGameRoom id ->
+    | NewGameRoom id ->
         Messages.GameRoomAdded id
+    | ShareClientMessage msg ->
+        Messages.ShareClientMsg msg
 
 //let toDomain (dto: ServerMsgDto) =
 //    dto

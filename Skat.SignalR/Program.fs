@@ -20,6 +20,7 @@ open Skat.Data
 open Skat.SignalR.Persistence.GameRoom
 open Skat.SignalR.Persistence.DbInitiliaziation
 open System.Text.Json.Serialization
+open Transport
 
 module GameStore =
     let games = ConcurrentDictionary<string, ResizeArray<string>>()
@@ -40,12 +41,20 @@ type GameHub (
 
             //let msg = ServerMsg.NewGameRoom result
             //let dto = Transport.toDto msg
-            do! this.Clients.All.SendAsync("ServerMsg", ServerMsg.NewGameRoom result)
+            do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.NewGameRoom result)
+            //do! this.Clients.All.SendAsync("ServerMsg", $"New room id is {result |> string}")
 
-            do! this.Clients.All.SendAsync("ServerMsg", ServerMsg.ShareMessage $"New room id is {result}")
-            //do! this.Clients.All.SendAsync("ReceiveMove", result)
+            //do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"New room id is {result}")
+            //do! this.Clients.All.SendAsync("ServerMsg", "Hello")
+            do! this.Clients.All.SendAsync("ReceiveMove", result |> string)
             //do! this.Clients.All.SendAsync("CreateRoom", $"New Room created: {result}")
             //return result
+        }
+
+    member this.GetGameRooms () =
+        task {
+            let! rooms = repo.GetAllRooms()
+            do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"Current rooms: {rooms |> List.length}")
         }
     
     member this.JoinGame (gameId: string, playerName: string) =
@@ -55,7 +64,7 @@ type GameHub (
 
             //let msg = ServerMsg.JoinGame (List.ofSeq players)
             //let dto = Transport.toDto msg
-            do! this.Clients.Group(gameId).SendAsync("ServerMsg", ServerMsg.JoinGame (List.ofSeq players))
+            do! this.Clients.Group(gameId).SendAsync("ServerMsg", ServerMsgDto.JoinGame (List.ofSeq players))
 
             do! this.Clients.Group(gameId).SendAsync("PlayersUpdate", players)
         }
@@ -74,7 +83,7 @@ type GameHub (
         task {
             //let msg = ServerMsg.MoveReceiving move
             //let dto = Transport.toDto msg
-            do! this.Clients.All.SendAsync("ServerMsg", ServerMsg.MoveReceiving move)
+            do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.MoveReceiving move)
 
             do! this.Clients.All.SendAsync("ReceiveMove", move)
         }

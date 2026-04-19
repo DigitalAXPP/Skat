@@ -267,6 +267,23 @@ module App =
                                 cmdNewRoom
                                 Cmd.map LoginMsg cmd
                             ]
+                    | AllRooms ->
+                        match model.HubService with
+                        | Some hub ->
+                            let cmdAllRooms =
+                                Cmd.ofAsyncMsg (async {
+                                    try
+                                        let! rooms = hub.GetRooms() |> Async.AwaitTask
+                                        printfn "Received rooms: %A" rooms
+                                        return EnterGameSucceeded
+                                    with exn ->
+                                        return HubFailure exn.Message
+                                })
+                            { model with Login = updated },
+                            Cmd.batch [
+                                cmdAllRooms
+                                Cmd.map LoginMsg cmd
+                            ]
                     | _ -> { model with Login = updated }, Cmd.map LoginMsg cmd
                 | None ->
                     model, Cmd.none
@@ -356,6 +373,7 @@ module App =
                 // Here you would update the game state based on the received move
                 { model with Moves = move :: model.Moves}, Cmd.none
             | Messages.GameRoomAdded id ->
+                printfn "New game room added with ID: %d" id
                 // Handle new game room added if needed
                 model, Cmd.none
             | Messages.ShareClientMsg msg ->

@@ -7,6 +7,7 @@ open SharedTypes
 open SignalRClient
 open Fabulous.Dispatcher
 open Skat.Database
+//open Avalonia.Controls
 
 type Model = { 
     UserName: string
@@ -27,6 +28,7 @@ type Msg =
     | TellAll of string
     | RequestConnection of string
     | NewGameRoom
+    | GetAllRooms
 
 let init () =
     { 
@@ -55,6 +57,8 @@ let update msg model =
         model, Cmd.none, SendMessageToAll message
     | NewGameRoom ->
         model, Cmd.none, NewRoom
+    | GetAllRooms ->
+        model, Cmd.none, AllRooms
 
 let view (hub: HubService option) model =
     VStack() {
@@ -70,5 +74,6 @@ let view (hub: HubService option) model =
         Button("Quit Game", EndGame model.UserName)
         Button("Add move", SelectCard "right")
         Button("Create Game Room", NewGameRoom)
+        Button("Get Game Rooms", GetAllRooms)
         Button("Go to Game Page", NextGamePage)
     }

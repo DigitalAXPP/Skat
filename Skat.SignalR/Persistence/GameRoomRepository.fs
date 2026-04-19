@@ -9,6 +9,7 @@ module GameRoom =
 
     type IGameRoomRepository =
         abstract member GetRoom : RoomId: int -> Task<GameRoom option>
+        abstract member GetAllRooms : unit -> Task<GameRoom list>
         abstract member InsertRoom : unit -> Task<int>
 
     type GameRoomRepository (connectionstring: string) =
@@ -25,6 +26,15 @@ module GameRoom =
                 return 
                     if isNull (box(result)) then None
                     else Some result
+            }
+
+            member _.GetAllRooms () = task {
+                use conn = new SqliteConnection(connectionstring)
+                let! result = conn.QueryAsync<GameRoom>(
+                        "SELECT * FROM GameRoom"
+                    )
+                printfn $"Retrieved rooms: {result |> Seq.length}"
+                return result |> Seq.toList
             }
             
             member _.InsertRoom () = task {

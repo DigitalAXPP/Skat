@@ -22,6 +22,7 @@ type Intent =
     | SendSelectedCard of string
     | AppendCard of string
     | NewRoom
+    | AllRooms
     | SendMessageToAll of string
     | ForwardUsernameToAuth of string
     | ForwardPasswordToAuth of string

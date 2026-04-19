@@ -1,7 +1,9 @@
 module SignalRClient
 
 open Microsoft.AspNetCore.SignalR.Client
-open HubMethods
+open Microsoft.AspNetCore.SignalR.Protocol
+open Microsoft.Extensions.DependencyInjection
+open System.Text.Json.Serialization
 open SharedTypes
 open Messages
 open Transport
@@ -51,21 +53,26 @@ type HubService(
                         HubConnectionBuilder()
                             .WithUrl(hubUrl)
                             .WithAutomaticReconnect()
+                            .AddJsonProtocol(fun options ->
+                                options.PayloadSerializerOptions.Converters.Add(JsonFSharpConverter()))
                             .Build()
 
                     connection.On<string>("ReceiveMove", fun move ->
                         printf "New move: %s" move) |> ignore
 
-                    connection.On<string seq>("PlayersUpdate", fun players ->
-                        printf "Players updated: %A" (players |> Seq.toList)) |> ignore
+                    //connection.On<string seq>("PlayersUpdate", fun players ->
+                    //    printf "Players updated: %A" (players |> Seq.toList)) |> ignore
 
                     //connection.On<int>("CreateRoom", fun roomId ->
                     //    printf "New room created: %d" roomId) |> ignore
 
-                    connection.On<ServerMsg>(ServerMsg, fun (dto: ServerMsg) ->
-                        //let domainMsg = Transport.toDomain dto
-                        //dispatch domainMsg
-                        dispatch (Transport.toDomainMsg dto)
+                    connection.On<ServerMsgDto>(HubMethods.ServerMsg, fun (dto: ServerMsgDto) ->
+                    //connection.On<string>(HubMethods.ServerMsg, fun (msg: string) ->
+                        let domainMsg = Transport.toDomainMsg dto
+                        dispatch domainMsg
+                        printf "Received ServerMsg: %s" (dto |> string)
+                        //dispatch (Transport.toDomainMsg dto)
+                        //printfn "Received ServerMsg: %A" dto
                     ) |> ignore
 
                     do! connection.StartAsync()
@@ -143,6 +150,16 @@ type HubService(
                 | Some connection ->
                     do! connection.InvokeAsync("AddGameRoom")
                     printfn "Room added."
+                | None ->
+                    printfn "Not connected to hub."
+        }
+
+    member _.GetRooms() =
+        task {
+            match hub with
+                | Some connection ->
+                    do! connection.InvokeAsync("GetGameRooms")
+                    printfn "Requested game rooms."
                 | None ->
                     printfn "Not connected to hub."
         }
