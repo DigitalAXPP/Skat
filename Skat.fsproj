@@ -38,11 +38,11 @@
     <AvaloniaResource Include="Resources\Images\**" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.0.7" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.14" />
     <!--<PackageReference Include="FSharp.Core" Version="8.0.100" />-->
     <PackageReference Include="Fabulous" Version="2.4.1" />
     <PackageReference Include="Fabulous.Avalonia" Version="2.4.0" />
-    <PackageReference Include="Avalonia.Desktop" Version="11.0.7" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.14" />
     <PackageReference Include="FSharp.SystemTextJson" Version="1.4.36" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.6" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="10.0.6" />
