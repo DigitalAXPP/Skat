@@ -7,8 +7,6 @@
   <ItemGroup>
     <Compile Include="Persistence\GameRoomRepository.fs" />
     <Compile Include="persistence\DbInitialization.fs" />
-    <Compile Include="WeatherForecast.fs" />
-    <Compile Include="Controllers/WeatherForecastController.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

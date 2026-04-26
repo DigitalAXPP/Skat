@@ -11,15 +11,7 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <Folder Include="Data\" />
     <Folder Include="Resources\Images\" />
-    <Compile Include="data\IDatabase.fs" />
-    <Compile Include="data\User.fs" />
-    <Compile Include="data\Migrations.fs" />
-    <Compile Include="data\Repository.fs" />
-    <Folder Include="Domain\" />
-    <Compile Include="domain\Database.fs" />
-    <Compile Include="domain\UserRepository.fs" />
     <Compile Include="shared\JsonConversion.fs" />
     <Compile Include="shared\HubMethods.fs" />
     <Compile Include="shared\SharedTypes.fs" />

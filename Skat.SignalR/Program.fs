@@ -16,7 +16,6 @@ open Microsoft.Extensions.Logging
 open System.Collections.Concurrent
 open Microsoft.AspNetCore.SignalR
 open SharedTypes
-open Skat.Data
 open Skat.SignalR.Persistence.GameRoom
 open Skat.SignalR.Persistence.DbInitiliaziation
 open System.Text.Json.Serialization
@@ -39,16 +38,8 @@ type GameHub (
         task {
             let! result = repo.InsertRoom()
 
-            //let msg = ServerMsg.NewGameRoom result
-            //let dto = Transport.toDto msg
             do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.NewGameRoom result)
-            //do! this.Clients.All.SendAsync("ServerMsg", $"New room id is {result |> string}")
-
-            //do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"New room id is {result}")
-            //do! this.Clients.All.SendAsync("ServerMsg", "Hello")
             do! this.Clients.All.SendAsync("ReceiveMove", result |> string)
-            //do! this.Clients.All.SendAsync("CreateRoom", $"New Room created: {result}")
-            //return result
         }
 
     member this.GetGameRooms () =
@@ -62,8 +53,6 @@ type GameHub (
             do! this.Groups.AddToGroupAsync (this.Context.ConnectionId, gameId)
             let players = GameStore.addPlayer gameId playerName
 
-            //let msg = ServerMsg.JoinGame (List.ofSeq players)
-            //let dto = Transport.toDto msg
             do! this.Clients.Group(gameId).SendAsync("ServerMsg", ServerMsgDto.JoinGame (List.ofSeq players))
 
             do! this.Clients.Group(gameId).SendAsync("PlayersUpdate", players)
@@ -81,8 +70,6 @@ type GameHub (
 
     member this.SendMove (move: string) =
         task {
-            //let msg = ServerMsg.MoveReceiving move
-            //let dto = Transport.toDto msg
             do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.MoveReceiving move)
 
             do! this.Clients.All.SendAsync("ReceiveMove", move)

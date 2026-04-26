@@ -6,8 +6,6 @@ open Fabulous
 open SharedTypes
 open SignalRClient
 open Fabulous.Dispatcher
-open Skat.Database
-//open Avalonia.Controls
 
 type Model = { 
     UserName: string

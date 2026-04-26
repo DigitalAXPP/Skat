@@ -8,33 +8,6 @@ open SharedTypes
 open Messages
 open Transport
 
-//let connect (hubUrl : string) (dispatch : ServerMsg -> unit) =
-//    task {
-//        let hub =
-//            HubConnectionBuilder()
-//                .WithUrl(hubUrl)
-//                .WithAutomaticReconnect()
-//                .Build()
-
-//        hub.On<string>("ReceiveMove", fun move ->
-//            printf "New move: %s" move) |> ignore
-
-//        hub.On<string seq>("PlayersUpdate", fun players ->
-//            printf "Players updated: %A" (players |> Seq.toList)) |> ignore
-
-//        do! hub.StartAsync()
-//        printf "Connected to %s" hubUrl
-//        return hub
-//    }
-
-//let disconnect (hub: HubConnection) =
-//    task {
-//        if not (isNull hub) then
-//            do! hub.StopAsync()
-//            do! hub.DisposeAsync().AsTask()
-//            printfn "Hub disconnected."
-//    }
-
 type HubService(
     hubUrl: string,
     dispatch: DomainMsg -> unit) =
@@ -60,19 +33,10 @@ type HubService(
                     connection.On<string>("ReceiveMove", fun move ->
                         printf "New move: %s" move) |> ignore
 
-                    //connection.On<string seq>("PlayersUpdate", fun players ->
-                    //    printf "Players updated: %A" (players |> Seq.toList)) |> ignore
-
-                    //connection.On<int>("CreateRoom", fun roomId ->
-                    //    printf "New room created: %d" roomId) |> ignore
-
                     connection.On<ServerMsgDto>(HubMethods.ServerMsg, fun (dto: ServerMsgDto) ->
-                    //connection.On<string>(HubMethods.ServerMsg, fun (msg: string) ->
                         let domainMsg = Transport.toDomainMsg dto
                         dispatch domainMsg
                         printf "Received ServerMsg: %s" (dto |> string)
-                        //dispatch (Transport.toDomainMsg dto)
-                        //printfn "Received ServerMsg: %A" dto
                     ) |> ignore
 
                     do! connection.StartAsync()
@@ -132,17 +96,6 @@ type HubService(
                 | None ->
                     printfn "Not connected to hub."
         }
-
-    //member _.NewUser(name: string, email: string, passwordHash: string) =
-    //    task {
-    //        match hub with
-    //            | Some connection ->
-                    
-    //                do! connection.InvokeAsync("NewAccount", name, email, passwordHash)
-    //                printfn "New account created: %s" name
-    //            | None ->
-    //                printfn "Not connected to hub."
-    //    }
 
     member _.CreateRoom() =
         task {
