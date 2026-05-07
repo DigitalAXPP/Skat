@@ -12,7 +12,9 @@ module DbInitiliaziation =
         cmd.Transaction <- transaction
 
         cmd.CommandText <- """CREATE TABLE IF NOT EXISTS GameRoom (
-            RoomId INTEGER PRIMARY KEY
+            RoomId INTEGER PRIMARY KEY,
+            MaxPlayer INTEGER NOT NULL DEFAULT 4,
+            CurrentPlayer INTEGER NOT NULL DEFAULT 0
         )"""
         cmd.ExecuteNonQuery() |> ignore
 
@@ -22,6 +24,21 @@ module DbInitiliaziation =
             Name TEXT NOT NULL,
             RoomId INTEGER,
             FOREIGN KEY (RoomId) REFERENCES GameRoom(RoomId)
+        )"""
+        cmd.ExecuteNonQuery() |> ignore
+
+        cmd.CommandText <- """CREATE TABLE IF NOT EXISTS GameEvent (
+            GameId INTEGER PRIMARY KEY,
+            RoomId INTEGER,
+            PlayerId INTEGER,
+            HandNumber INTEGER,
+            Phase TEXT,
+            EventType TEXT,
+            EventData TEXT,
+            Sequence INTEGER,
+            CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (RoomId) REFERENCES GameRoom (RoomId),
+            FOREIGN KEY (PlayerId) REFERENCES Player (PlayerId)
         )"""
         cmd.ExecuteNonQuery() |> ignore
 

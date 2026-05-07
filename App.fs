@@ -284,6 +284,25 @@ module App =
                                 cmdAllRooms
                                 Cmd.map LoginMsg cmd
                             ]
+                    | JoinGameRoom roomId ->
+                        match model.HubService, model.AuthenticatedUser with
+                        | Some hub, Some user ->
+                            let cmdJoinRoom =
+                                Cmd.ofAsyncMsg (async {
+                                    try
+                                        do! (hub.JoinRoom roomId user.Username) |> Async.AwaitTask
+                                        return EnterGameSucceeded
+                                    with exn ->
+                                        return HubFailure exn.Message
+                                })
+                            { model with Login = updated },
+                            Cmd.batch [
+                                cmdJoinRoom
+                                Cmd.map LoginMsg cmd
+                            ]
+                        | _, _ -> 
+                            { model with Login = updated },
+                            Cmd.map LoginMsg cmd
                     | _ -> { model with Login = updated }, Cmd.map LoginMsg cmd
                 | None ->
                     model, Cmd.none
@@ -366,6 +385,7 @@ module App =
         | DomainMsg domainMsg ->
             match domainMsg with
             | Messages.GameJoined players ->
+                printfn "Joined game with players: %A" players
                 { model with Status = InLobby; Players = players }, Cmd.none
             | Messages.GameLeft ->
                 { model with Status = NotInGame; Players = [] }, Cmd.none
@@ -376,6 +396,10 @@ module App =
                 printfn "New game room added with ID: %d" id
                 // Handle new game room added if needed
                 model, Cmd.none
+            | Messages.GameRoomsReceived rooms ->
+                printfn "Received game rooms: %A" rooms
+                // Handle received game rooms if needed
+                model, Cmd.ofMsg (LoginMsg (LoginPage.SetRooms rooms))
             | Messages.ShareClientMsg msg ->
                 printfn "Received shared client message: %s" msg
                 // Handle shared client message if needed

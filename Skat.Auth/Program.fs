@@ -19,6 +19,7 @@ open AuthenticationService
 open Skat.Auth.Persistence.UserRepository
 open Skat.Auth.Persistence.SessionRepository
 open Skat.Auth.Persistence.Infrastructure
+open Skat.Auth.Persistence.DbInitialization
 
 
 module Program =
@@ -48,6 +49,8 @@ module Program =
             SessionRepository(connectionString) :> ISessionRepository)
 
         let app = builder.Build()
+
+        initialize(connectionString)
 
         app.UseHttpsRedirection()
 

@@ -31,7 +31,7 @@ module GameRoom =
             member _.GetAllRooms () = task {
                 use conn = new SqliteConnection(connectionstring)
                 let! result = conn.QueryAsync<GameRoom>(
-                        "SELECT * FROM GameRoom"
+                        "SELECT * FROM GameRoom ORDER BY CurrentPlayer DESC"
                     )
                 printfn $"Retrieved rooms: {result |> Seq.length}"
                 return result |> Seq.toList

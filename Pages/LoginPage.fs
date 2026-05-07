@@ -6,12 +6,15 @@ open Fabulous
 open SharedTypes
 open SignalRClient
 open Fabulous.Dispatcher
+open Skat.Game.Domain
 
 type Model = { 
     UserName: string
     Id: int
     Email: string
     PasswordHash: string
+    Rooms: GameRoom list
+    RoomsLoaded: bool
 }
 
 type Msg =
@@ -19,6 +22,7 @@ type Msg =
     | ChangeId of string
     | ChangeEmail of string
     | SetPassword of string
+    | SetRooms of GameRoom list
     | NextGamePage
     | StartNewGame of string
     | EndGame of string
@@ -27,6 +31,7 @@ type Msg =
     | RequestConnection of string
     | NewGameRoom
     | GetAllRooms
+    | SelectGameRoom of int
 
 let init () =
     { 
@@ -34,6 +39,8 @@ let init () =
         Id = 0
         Email = "test@test.com"
         PasswordHash = ""
+        Rooms = []
+        RoomsLoaded = false
     }, Cmd.none
 
 let update msg model =
@@ -42,6 +49,7 @@ let update msg model =
     | ChangeId number -> { model with Id = (System.Int32.Parse(number))}, Cmd.none, NoIntent
     | ChangeEmail email -> { model with Email = email }, Cmd.none, NoIntent
     | SetPassword password -> { model with PasswordHash = password }, Cmd.none, NoIntent
+    | SetRooms rooms -> { model with Rooms = rooms }, Cmd.none, NoIntent
     | RequestConnection name ->
         model, Cmd.none, NoIntent
     | NextGamePage -> model, Cmd.none, NavigateTo PageGame
@@ -57,6 +65,8 @@ let update msg model =
         model, Cmd.none, NewRoom
     | GetAllRooms ->
         model, Cmd.none, AllRooms
+    | SelectGameRoom roomId ->
+        model, Cmd.none, JoinGameRoom roomId
 
 let view (hub: HubService option) model =
     VStack() {
@@ -67,6 +77,11 @@ let view (hub: HubService option) model =
         TextBox(model.Id.ToString(), ChangeId)
         TextBox(model.Email, ChangeEmail)
         TextBox(model.PasswordHash, SetPassword)
+        TextBlock($"Rooms: {model.RoomsLoaded} - {model.Rooms}")
+        HStack(spacing = 10) {
+            ListBox(model.Rooms, fun item ->
+                TextBlock($"Room {item.RoomId}").onTapped(fun _ -> SelectGameRoom item.RoomId))
+        }
         Button("Start New Game", StartNewGame model.UserName)
         Button("Send Message to All", TellAll model.UserName)
         Button("Quit Game", EndGame model.UserName)

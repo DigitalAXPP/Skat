@@ -1,6 +1,7 @@
 module Messages
 
 open SharedTypes
+open Skat.Game.Domain
 
 type DomainMsg =
     | ConnectHub
@@ -14,6 +15,7 @@ type DomainMsg =
     | MoveReceived of string
 
     | GameRoomAdded of int
+    | GameRoomsReceived of GameRoom list
     | ShareClientMsg of string
 
     | ConnectionHubFailed of string

@@ -46,16 +46,20 @@ type GameHub (
         task {
             let! rooms = repo.GetAllRooms()
             do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"Current rooms: {rooms |> List.length}")
+
+            do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.GetGameRoooms rooms)
         }
     
-    member this.JoinGame (gameId: string, playerName: string) =
+    //member this.JoinGame (gameId: string, playerName: string) =
+    member this.JoinRoom (gameId: int) (user: string) =
         task {
-            do! this.Groups.AddToGroupAsync (this.Context.ConnectionId, gameId)
-            let players = GameStore.addPlayer gameId playerName
+            //do! this.Groups.AddToGroupAsync (this.Context.ConnectionId, gameId)
+            //let players = GameStore.addPlayer gameId playerName
 
-            do! this.Clients.Group(gameId).SendAsync("ServerMsg", ServerMsgDto.JoinGame (List.ofSeq players))
-
-            do! this.Clients.Group(gameId).SendAsync("PlayersUpdate", players)
+            //do! this.Clients.Group(gameId).SendAsync("ServerMsg", ServerMsgDto.JoinGame (List.ofSeq players))
+            do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.JoinGame [user])
+            do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{user} joined room {gameId}.")
+            //do! this.Clients.Group(gameId).SendAsync("PlayersUpdate", players)
         }
 
     member this.QuitGame (gameId: string, playerName: string) =

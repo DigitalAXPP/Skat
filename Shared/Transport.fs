@@ -1,12 +1,14 @@
 module Transport
 
 open SharedTypes
+open Skat.Game.Domain
 
 type ServerMsgDto =
     | JoinGame of players : string list
     | MoveReceiving of move : string
     | QuitGame
     | NewGameRoom of roomid : int
+    | GetGameRoooms of rooms : GameRoom list
     | ShareClientMessage of msg : string
 
 let toDomainMsg serverMsg =
@@ -19,5 +21,7 @@ let toDomainMsg serverMsg =
         Messages.MoveReceived move
     | NewGameRoom id ->
         Messages.GameRoomAdded id
+    | GetGameRoooms rooms ->
+        Messages.GameRoomsReceived rooms
     | ShareClientMessage msg ->
         Messages.ShareClientMsg msg
