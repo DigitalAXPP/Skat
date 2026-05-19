@@ -32,6 +32,7 @@ type AuthService
                 else
                     let hash = BCrypt.Net.BCrypt.HashPassword password
                     let! userId = users.CreateUser (username, hash)
+                    let! playerId = users.CreatePlayer (userId, username)
                     let! token = sessions.CreateSession userId
                     return Ok token
         }

@@ -20,6 +20,8 @@ open Skat.SignalR.Persistence.GameRoom
 open Skat.SignalR.Persistence.DbInitiliaziation
 open System.Text.Json.Serialization
 open Transport
+open Microsoft.Data.Sqlite
+open Dapper
 
 module GameStore =
     let games = ConcurrentDictionary<string, ResizeArray<string>>()
@@ -53,11 +55,50 @@ type GameHub (
     //member this.JoinGame (gameId: string, playerName: string) =
     member this.JoinRoom (gameId: int) (user: string) =
         task {
+            let dbPath = Path.Combine("C:\\Users\\apiep\\Documents\\github\\Skat\\Skat.SignalR", "game.db")
+            let connectionString = $"Data Source={dbPath}"
+            use conn = new SqliteConnection(connectionString)
+
+            do! conn.OpenAsync()
+            use tx = conn.BeginTransaction()
+
+            let! result =
+                task {
+                    try
+                        let! userId = conn.QuerySingleAsync<string>(
+                            "SELECT id FROM Users WHERE username = @username",
+                            {| username = user |}
+                        )
+
+                        do! conn.ExecuteAsync(
+                            "UPDATE Player SET RoomId = @RoomId WHERE UserId = @UserId",
+                                {| RoomId = gameId; UserId = userId |},
+                                transaction = tx) :> Task
+
+                        do! conn.ExecuteAsync(
+                            """UPDATE GameRoom 
+                                SET CurrentPlayer = CurrentPlayer + 1
+                                WHERE RoomId = @RoomId AND CurrentPlayer < MaxPlayer""",
+                            {| RoomId = gameId |},
+                            transaction = tx) :> Task
+                        return Ok userId
+                    with ex ->
+                        return Error ex.Message
+                }
+
+            match result with
+            | Ok r -> 
+                tx.Commit()
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.JoinGame ["user"; "user2"])
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{user}/{r} joined room {gameId}.")
+            | Error _ -> 
+                tx.Rollback()
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"DB activity failed.")
             //do! this.Groups.AddToGroupAsync (this.Context.ConnectionId, gameId)
             //let players = GameStore.addPlayer gameId playerName
 
             //do! this.Clients.Group(gameId).SendAsync("ServerMsg", ServerMsgDto.JoinGame (List.ofSeq players))
-            do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.JoinGame [user])
+            //do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.JoinGame [user])
             do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{user} joined room {gameId}.")
             //do! this.Clients.Group(gameId).SendAsync("PlayersUpdate", players)
         }

@@ -12,6 +12,7 @@ module UserRepository =
 
     type IUserRepository =
         abstract member CreateUser : string * string -> Task<Guid>
+        abstract member CreatePlayer : Guid * string -> Task<Guid>
         abstract member UsernameExists : string -> Task<bool>
         abstract member GetUserByUsername : string -> Task<User option>
 
@@ -36,6 +37,17 @@ module UserRepository =
                         {| Id = userId; Username = username; PasswordHash = passwordHash |}
                     )
                 return userId
+            }
+
+            member _.CreatePlayer (id: Guid, username: string) = task {
+                use conn = new SqliteConnection(connectionString)
+                
+                let playerId = Guid.NewGuid()
+                let! _ = conn.ExecuteAsync(
+                        "INSERT INTO Player (UserId, PlayerId, Name) VALUES (@UserId, @PlayerId, @name) RETURNING PlayerId",
+                        {| UserId = id; PlayerId = playerId; name = username |}
+                    )
+                return playerId
             }
 
             member _.GetUserByUsername (username: string) = task {

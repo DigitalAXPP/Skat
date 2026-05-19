@@ -19,11 +19,10 @@ module DbInitiliaziation =
         cmd.ExecuteNonQuery() |> ignore
 
         cmd.CommandText <- """CREATE TABLE IF NOT EXISTS Player (
-            PlayerId INTEGER PRIMARY KEY,
+            PlayerId TEXT PRIMARY KEY,
             UserId TEXT NOT NULL,
             Name TEXT NOT NULL,
-            RoomId INTEGER,
-            FOREIGN KEY (RoomId) REFERENCES GameRoom(RoomId)
+            RoomId INTEGER
         )"""
         cmd.ExecuteNonQuery() |> ignore
 
@@ -39,6 +38,13 @@ module DbInitiliaziation =
             CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (RoomId) REFERENCES GameRoom (RoomId),
             FOREIGN KEY (PlayerId) REFERENCES Player (PlayerId)
+        )"""
+        cmd.ExecuteNonQuery() |> ignore
+
+        cmd.CommandText <- """CREATE TABLE IF NOT EXISTS Users (
+            id TEXT PRIMARY KEY,
+            username TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL
         )"""
         cmd.ExecuteNonQuery() |> ignore
 
