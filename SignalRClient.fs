@@ -87,11 +87,11 @@ type HubService(
                     printfn "Not connected to hub."
         }
 
-    member _.SendMove(move: string) =
+    member _.SendMove(move: string, userId: string) =
         task {
             match hub with
                 | Some connection ->
-                    do! connection.InvokeAsync("SendMove", move)
+                    do! connection.InvokeAsync("SendMove", move, userId)
                     printfn "Move sent: %s" move
                 | None ->
                     printfn "Not connected to hub."

@@ -45,7 +45,7 @@ type AuthService
                 match validateHash password user.PasswordHash with
                 | Error msg -> return Error msg
                 | Ok () ->
-                    let! token = sessions.CreateSession user.Id
-                    return Ok token
+                    //let! token = sessions.CreateSession user.Id
+                    return Ok user
         }
         

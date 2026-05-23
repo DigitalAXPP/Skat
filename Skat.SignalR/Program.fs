@@ -113,8 +113,41 @@ type GameHub (
             | _ -> ()
         }
 
-    member this.SendMove (move: string) =
+    member this.SendMove (move: string, userId: string) =
         task {
+            let dbPath = Path.Combine("C:\\Users\\apiep\\Documents\\github\\Skat\\Skat.SignalR", "game.db")
+            let connectionString = $"Data Source={dbPath}"
+            use conn = new SqliteConnection(connectionString)
+
+            do! conn.OpenAsync()
+            use tx = conn.BeginTransaction()
+
+            let! result =
+                task {
+                    try
+                        let! roomId = conn.QuerySingleAsync<int>(
+                            "SELECT RoomId FROM Player WHERE UserId = @userid",
+                            {| userid = userId |}
+                        )
+
+                        //do! conn.ExecuteAsync(
+                        //    "UPDATE Player SET RoomId = @RoomId WHERE UserId = @UserId",
+                        //        {| RoomId = gameId; UserId = userId |},
+                        //        transaction = tx) :> Task
+                        return Ok roomId
+                    with ex ->
+                        return Error ex.Message
+                }
+
+            match result with
+            | Ok r -> 
+                tx.Commit()
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.JoinGame ["user"; "user2"])
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{userId}/{r} joined room {r}.")
+            | Error _ -> 
+                tx.Rollback()
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"DB activity failed: {userId}")
+
             do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.MoveReceiving move)
 
             do! this.Clients.All.SendAsync("ReceiveMove", move)

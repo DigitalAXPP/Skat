@@ -110,7 +110,7 @@ let update msg model =
             | Some _ -> Some (model.CardSelected.Value @ [(id, cardSelection)])
         let newModel = { model with CardSelected = newList }
         newModel, Cmd.batch [
-            Cmd.ofMsg (TellAll (cardSelection.ToString()))
+            Cmd.ofMsg (AddSelectedCard cardSelection)
             Cmd.ofMsg CompareCards
             Cmd.ofMsg (RemoveCard (id, cardSelection))
         ], NoIntent

@@ -25,6 +25,6 @@ let mapRegisterEndpoint (app : WebApplication) =
             let! result = auth.Login (req.username, req.password)
             match result with
             | Error msg -> return Results.BadRequest {| error = msg |}
-            | Ok token -> return Results.Ok {| token = token |}
+            | Ok token -> return Results.Ok {| user = token |}
         })
     )

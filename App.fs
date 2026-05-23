@@ -106,6 +106,12 @@ module App =
                 AuthenticatedUser = Some user
                 Auth = Authenticated user
             }, Cmd.none
+        | AuthMsg (LoginError msg) ->
+            printfn "Login error: %s" msg
+            { model with
+                AuthenticatedUser = None
+                Auth = NotAuthenticated
+            }, Cmd.none
         | AuthMsg authMsg ->
             let updatedAuth, cmd = Skat.Auth.Update.update model.AuthModel authMsg
             { model with AuthModel = updatedAuth }, Cmd.map AuthMsg cmd
@@ -214,12 +220,12 @@ module App =
                             { model with Login = updated },
                             Cmd.none
                     | SendSelectedCard card ->
-                        match model.HubService with
-                        | Some hub ->
+                        match model.HubService, model.AuthenticatedUser with
+                        | Some hub, Some user ->
                             let cmdSendCard =
                                 Cmd.ofAsyncMsg (async {
                                     try
-                                        do! hub.SendMove(card) |> Async.AwaitTask
+                                        do! hub.SendMove(card, user.Id.ToString().ToUpper()) |> Async.AwaitTask
                                         return MessageSendToAllSucceeded
                                     with exn ->
                                         return HubFailure exn.Message
@@ -229,7 +235,7 @@ module App =
                                 cmdSendCard
                                 Cmd.map LoginMsg cmd
                             ]
-                        | None ->
+                        | None, None ->
                             { model with Login = updated },
                             Cmd.none
                     | SendMessageToAll message ->
@@ -335,12 +341,12 @@ module App =
                             { model with Game = updated },
                             Cmd.none 
                 | AppendCard card ->
-                    match model.HubService with
-                    | Some hub ->
+                    match model.HubService, model.AuthenticatedUser with
+                    | Some hub, Some user ->
                         let cmdAppendCard =
                             Cmd.ofAsyncMsg (async {
                                 try
-                                    do! hub.SendMove(card) |> Async.AwaitTask
+                                    do! hub.SendMove(card, user.Id.ToString().ToUpper()) |> Async.AwaitTask
                                     return MessageSendToAllSucceeded
                                 with exn ->
                                     return HubFailure exn.Message
@@ -350,7 +356,7 @@ module App =
                             cmdAppendCard
                             Cmd.map GameMsg cmd
                         ]
-                    | None ->
+                    | None, _ ->
                         { model with Game = updated },
                         Cmd.none
                 | _ -> { model with Game = updated }, Cmd.map GameMsg cmd
