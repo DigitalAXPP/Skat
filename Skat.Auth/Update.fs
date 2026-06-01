@@ -9,6 +9,9 @@ let update (model: Model) (msg: Msg) =
         { model with Username = username }, Cmd.none
     | SetPassword password ->
         { model with Password = password }, Cmd.none
+    | RegisterRequested (username, password) ->
+        let cmdResponse = AuthAPI.register (username, password)
+        model, cmdResponse
     | LoginRequested (username, password) ->
         let cmdResponse = AuthAPI.login (username, password)
         model, cmdResponse

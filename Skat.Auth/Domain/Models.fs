@@ -52,6 +52,7 @@ let init =
 type Msg =
     | SetUsername of string
     | SetPassword of string
+    | RegisterRequested of username:string * password:string
     | LoginRequested of username:string * password:string
     | LoginSuccess of User
     | LoginError of string

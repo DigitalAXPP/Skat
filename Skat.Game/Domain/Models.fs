@@ -7,7 +7,7 @@ type Player = {
 
 [<CLIMutable>]
 type GameRoom = {
-    RoomId: int
+    RoomId: string
     MaxPlayer: int
     CurrentPlayer: int
 }

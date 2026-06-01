@@ -7,7 +7,7 @@ type ServerMsgDto =
     | JoinGame of players : string list
     | MoveReceiving of move : string
     | QuitGame
-    | NewGameRoom of roomid : int
+    | NewGameRoom of roomid : string
     | GetGameRoooms of rooms : GameRoom list
     | ShareClientMessage of msg : string
 

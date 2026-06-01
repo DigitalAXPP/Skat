@@ -22,11 +22,12 @@ type Intent =
     | SendSelectedCard of string
     | AppendCard of string
     | NewRoom
-    | JoinGameRoom of int
+    | JoinGameRoom of string
     | AllRooms
     | SendMessageToAll of string
     | ForwardUsernameToAuth of string
     | ForwardPasswordToAuth of string
+    | RegisterToAuth of string * string
     | LoginToAuth of string * string
     | NavigateTo of Page
     /// Navigate to the login page where the user can enter credentials or authenticate.

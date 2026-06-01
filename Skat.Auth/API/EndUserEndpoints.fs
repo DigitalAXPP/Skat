@@ -6,6 +6,27 @@ open System.Net.Http
 open System.Text.Json
 open System.Text
 
+let register (username: string, password: string) =
+    Cmd.ofTaskMsg (task {
+            use client = new HttpClient()
+            let payload =
+                JsonSerializer.Serialize({| username = username; password = password |})
+            let content = new StringContent(payload, Encoding.UTF8, "application/json")
+            let! response = client.PostAsync("http://localhost:5284/register", content)
+            let! body = response.Content.ReadAsStringAsync()
+            if response.IsSuccessStatusCode then
+                let token = JsonSerializer.Deserialize<{| token: string |}>(body)
+                let tokenGuid =
+                    match System.Guid.TryParse(token.token) with
+                    | true, guid -> guid
+                    | false, _ -> failwith "Invalid token format"
+                return LoginSuccess { Id = tokenGuid; Username = username; PasswordHash = "hashed-password" }
+            else
+                let error = JsonSerializer.Deserialize<{| error: string |}>(body)
+                printfn "Registration error: %s" error.error
+                return LoginError error.error
+    })
+
 let login (username: string, password: string) =
     //Cmd.ofAsyncMsg (async {
     Cmd.ofTaskMsg (task {

@@ -117,12 +117,22 @@ type HubService(
                     printfn "Not connected to hub."
         }
 
-    member _.JoinRoom(roomId: int) (user: string) =
+    member _.JoinRoom(roomId: string) (user: string) =
         task {
             match hub with
                 | Some connection ->
                     do! connection.InvokeAsync("JoinRoom", roomId, user)
-                    printfn "Requested to join room: %d" roomId
+                    printfn "Requested to join room: %s" roomId
+                | None ->
+                    printfn "Not connected to hub."
+        }
+
+    member _.AddGameEvent(roomId: string) (playerId: string) =
+        task {
+            match hub with
+                | Some connection ->
+                    do! connection.InvokeAsync("AddGameEvent", roomId, playerId)
+                    printfn "Game event added: %s" roomId
                 | None ->
                     printfn "Not connected to hub."
         }

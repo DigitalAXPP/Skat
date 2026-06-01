@@ -17,6 +17,7 @@ type Msg =
     | NextLoginPage
     | AssignUsername of string
     | AssignPassword of string
+    | Register
     | Authenticate
 
 let init = 
@@ -32,6 +33,7 @@ let update msg model =
     | NextLoginPage -> model, Cmd.none, NavigateTo PageLogin
     | AssignUsername username -> { model with Username = username }, Cmd.none, ForwardUsernameToAuth username
     | AssignPassword password -> { model with Password = password }, Cmd.none, ForwardPasswordToAuth password
+    | Register -> model, Cmd.none, RegisterToAuth (model.Username, model.Password)
     | Authenticate -> model, Cmd.none, LoginToAuth (model.Username, model.Password)
 
 let view model =
@@ -43,5 +45,6 @@ let view model =
         
         TextBox(model.Username, AssignUsername)
         TextBox(model.Password, AssignPassword)
+        Button("Register", Register)
         Button("Login", Authenticate)
     }

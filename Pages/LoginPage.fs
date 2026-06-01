@@ -31,7 +31,7 @@ type Msg =
     | RequestConnection of string
     | NewGameRoom
     | GetAllRooms
-    | SelectGameRoom of int
+    | SelectGameRoom of string
 
 let init () =
     { 

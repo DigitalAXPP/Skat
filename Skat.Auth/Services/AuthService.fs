@@ -33,8 +33,8 @@ type AuthService
                     let hash = BCrypt.Net.BCrypt.HashPassword password
                     let! userId = users.CreateUser (username, hash)
                     let! playerId = users.CreatePlayer (userId, username)
-                    let! token = sessions.CreateSession userId
-                    return Ok token
+                    //let! token = sessions.CreateSession userId
+                    return Ok userId
         }
 
     member _.Login (username : string, password : string) = task {

@@ -8,16 +8,16 @@ open Dapper
 module GameRoom =
 
     type IGameRoomRepository =
-        abstract member GetRoom : RoomId: int -> Task<GameRoom option>
+        abstract member GetRoom : RoomId: string -> Task<GameRoom option>
         abstract member GetAllRooms : unit -> Task<GameRoom list>
-        abstract member InsertRoom : unit -> Task<int>
+        abstract member InsertRoom : unit -> Task<string>
 
     type GameRoomRepository (connectionstring: string) =
-        let mutable rooms : Map<int, GameRoom> = Map.empty
+        let mutable rooms : Map<string, GameRoom> = Map.empty
         
         interface IGameRoomRepository with
             
-            member _.GetRoom (roomId: int) = task {
+            member _.GetRoom (roomId: string) = task {
                 use conn = new SqliteConnection(connectionstring)
                 let! result = conn.ExecuteScalarAsync<GameRoom>(
                         "SELECT COUNT(*) FROM GameRoom WHERE RoomId = @roomId",
@@ -39,8 +39,10 @@ module GameRoom =
             
             member _.InsertRoom () = task {
                 use conn = new SqliteConnection(connectionstring)
+                let roomId = System.Guid.NewGuid().ToString().ToUpper()
                 let! result = conn.ExecuteScalarAsync<int>(
-                        "INSERT INTO GameRoom DEFAULT VALUES; SELECT last_insert_rowid()"
+                        "INSERT INTO GameRoom (RoomId, MaxPlayer, CurrentPlayer) VALUES (@roomId, @maxPlayer, @currentPlayer)",
+                        {| roomId = roomId; maxPlayer = 4; currentPlayer = 0 |}
                     )
-                return result
+                return roomId
             }
