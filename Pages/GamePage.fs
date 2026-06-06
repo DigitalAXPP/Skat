@@ -9,6 +9,7 @@ open Skat.Game.Functions
 open SignalRClient
 
 type Model = {
+    RoomId: string
     Game: GameType
     CardValue: int
     CardSelected: (PlayerId * Card) list option
@@ -31,6 +32,7 @@ type Msg =
     | WinningHand
     | TellAll of string
     | AddSelectedCard of Card
+    | InsertRoomId of string
 
 let declarefPlayer = 
     {
@@ -64,6 +66,7 @@ let declaretPlayer =
 
 let init = 
     {
+        RoomId = ""
         Game = Grand
         CardValue = 0
         CardSelected = None
@@ -158,6 +161,9 @@ let update msg model =
         model, Cmd.none, SendMessageToAll message
     | AddSelectedCard card ->
         model, Cmd.none, AppendCard (card.ToString())
+    | InsertRoomId roomId ->
+        { model with RoomId = roomId }, Cmd.none, NoIntent
+        
 
 let view (hub: HubService option) model =
         VStack(spacing = 25.) {
@@ -165,6 +171,7 @@ let view (hub: HubService option) model =
             TextBlock($"Third Page: {model.PlayerOne.StartingHand}")
             TextBlock($"Third Page: {model.CardSelected}")
             TextBlock($"Card value: {model.CardValue}")
+            TextBlock($"RoomID: {model.RoomId}")
             Button("Go to Home Page", NextHomePage)
             Button("Set Cards", SetCards)
             Button("Winning Hand", WinningHand)

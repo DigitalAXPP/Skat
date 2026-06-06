@@ -16,6 +16,7 @@ type DomainMsg =
 
     | GameRoomAdded of string
     | GameRoomsReceived of GameRoom list
+    | NewGameEvent of roomId : string
     | ShareClientMsg of string
 
     | ConnectionHubFailed of string

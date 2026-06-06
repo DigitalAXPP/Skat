@@ -415,6 +415,13 @@ module App =
                 printfn "Received game rooms: %A" rooms
                 // Handle received game rooms if needed
                 model, Cmd.ofMsg (LoginMsg (LoginPage.SetRooms rooms))
+            | Messages.NewGameEvent roomId->
+                printfn "Received new game event"
+                // Handle new game event if needed
+                model, Cmd.batch [
+                    Cmd.ofMsg (LoginMsg (LoginPage.NextGamePage))
+                    Cmd.ofMsg (GameMsg (GamePage.InsertRoomId roomId))
+                ]
             | Messages.ShareClientMsg msg ->
                 printfn "Received shared client message: %s" msg
                 // Handle shared client message if needed

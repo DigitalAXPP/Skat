@@ -133,6 +133,7 @@ type GameHub (
             match result with
             | Ok r -> 
                 tx.Commit()
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.NewGameEvent roomId)
                 do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{r}/{roomId} created for {userId}.")
             | Error err -> 
                 tx.Rollback()

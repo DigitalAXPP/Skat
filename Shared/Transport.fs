@@ -9,6 +9,7 @@ type ServerMsgDto =
     | QuitGame
     | NewGameRoom of roomid : string
     | GetGameRoooms of rooms : GameRoom list
+    | NewGameEvent of roomid : string
     | ShareClientMessage of msg : string
 
 let toDomainMsg serverMsg =
@@ -23,5 +24,7 @@ let toDomainMsg serverMsg =
         Messages.GameRoomAdded id
     | GetGameRoooms rooms ->
         Messages.GameRoomsReceived rooms
+    | NewGameEvent roomId ->
+        Messages.NewGameEvent roomId
     | ShareClientMessage msg ->
         Messages.ShareClientMsg msg
