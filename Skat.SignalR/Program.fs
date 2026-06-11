@@ -89,7 +89,7 @@ type GameHub (
             match result with
             | Ok r -> 
                 tx.Commit()
-                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.JoinGame ["user"; "user2"])
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.JoinGame user)
                 do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{user}/{r} joined room {roomId}.")
             | Error err -> 
                 tx.Rollback()
@@ -103,7 +103,7 @@ type GameHub (
             //do! this.Clients.Group(gameId).SendAsync("PlayersUpdate", players)
         }
 
-    member this.AddGameEvent (roomId: string) (userId: string)  =
+    member this.CreateGame (roomId: string) =
         task {
             let dbPath = Path.Combine("C:\\Users\\apiep\\Documents\\github\\Skat\\Skat.SignalR", "game.db")
             let connectionString = $"Data Source={dbPath}"
@@ -116,13 +116,49 @@ type GameHub (
                 task {
                     try
                         let gameId = System.Guid.NewGuid().ToString().ToUpper()
+                        let! game = conn.ExecuteAsync(
+                            "INSERT INTO Game (GameId, RoomId, HandNumber, Phase) VALUES (@GameId, @RoomId, @HandNumber, @Phase)",
+                            {| GameId = gameId; RoomId = roomId; HandNumber = 0; Phase = "Setup" |},
+                            transaction = tx)
+
+                        return Ok game
+                    with ex ->
+                        return Error ex.Message
+                }
+
+            match result with
+            | Ok r -> 
+                tx.Commit()
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.NewGame)
+            | Error err -> 
+                tx.Rollback()
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{err.GetType().Name}: {err}")
+        }
+    
+    member this.AddGameEvent (roomId: string) (userId: string) (event: string)  =
+        task {
+            let dbPath = Path.Combine("C:\\Users\\apiep\\Documents\\github\\Skat\\Skat.SignalR", "game.db")
+            let connectionString = $"Data Source={dbPath}"
+            use conn = new SqliteConnection(connectionString)
+
+            do! conn.OpenAsync()
+            use tx = conn.BeginTransaction()
+
+            let! result =
+                task {
+                    try
+                        //let gameId = System.Guid.NewGuid().ToString().ToUpper()
+                        let! gameId = conn.QuerySingleAsync<string>(
+                            "SELECT GameId FROM Game WHERE RoomId = @roomId",
+                            {| roomId = roomId |}
+                            )
                         let! player = conn.QuerySingleAsync<string>(
                             "SELECT PlayerId FROM Player WHERE UserId = @userId",
                             {| userId = userId |}
                             )
                         let! gameEventId = conn.ExecuteAsync(
-                            "INSERT INTO GameEvent (GameId, RoomId, PlayerId) VALUES (@GameId, @RoomId, @PlayerId)",
-                            {| GameId = gameId; RoomId = roomId; PlayerId = player |},
+                            "INSERT INTO GameEvent (GameId, RoomId, PlayerId, EventData) VALUES (@GameId, @RoomId, @PlayerId, @Event)",
+                            {| GameId = gameId; RoomId = roomId; PlayerId = player; EventData = event |},
                             transaction = tx)
 
                         return Ok gameEventId
@@ -133,7 +169,7 @@ type GameHub (
             match result with
             | Ok r -> 
                 tx.Commit()
-                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.NewGameEvent roomId)
+                //do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.NewGameEvent roomId)
                 do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{r}/{roomId} created for {userId}.")
             | Error err -> 
                 tx.Rollback()
@@ -162,16 +198,18 @@ type GameHub (
             let! result =
                 task {
                     try
-                        let! roomId = conn.QuerySingleAsync<int>(
-                            "SELECT RoomId FROM Player WHERE UserId = @userid",
-                            {| userid = userId |}
-                        )
+                        let! player = conn.QuerySingleAsync<string>(
+                            "SELECT PlayerId FROM Player WHERE UserId = @userId",
+                            {| userId = userId |}
+                            )
 
-                        //do! conn.ExecuteAsync(
-                        //    "UPDATE Player SET RoomId = @RoomId WHERE UserId = @UserId",
-                        //        {| RoomId = gameId; UserId = userId |},
-                        //        transaction = tx) :> Task
-                        return Ok roomId
+                        let! eventAction = conn.ExecuteAsync(
+                            """UPDATE GameEvent 
+                                SET HandNumber = @HandNumber, Phase = @Phase, EventType = @EventType, EventData = @EventData, Sequence = @Sequence
+                                WHERE PlayerId = @PlayerId""",
+                            {| HandNumber = 1; Phase = "first"; EventType = "Hand"; EventData = move; Sequence = "Second"; PlayerId = player |},
+                            transaction = tx)
+                        return Ok eventAction
                     with ex ->
                         return Error ex.Message
                 }
@@ -179,15 +217,49 @@ type GameHub (
             match result with
             | Ok r -> 
                 tx.Commit()
-                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.JoinGame ["user"; "user2"])
-                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{userId}/{r} joined room {r}.")
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.CardSelected move)
+                //do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.NewGameEvent roomId)
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{userId}/{r} = {move}.")
             | Error err -> 
                 tx.Rollback()
                 do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{err.GetType().Name}: {err}")
+        }
 
-            do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.MoveReceiving move)
+    member this.SetGameParticipant (userId: string) (gameId: string) (seatPosition: int) (role: string) =
+        task {
+            let dbPath = Path.Combine("C:\\Users\\apiep\\Documents\\github\\Skat\\Skat.SignalR", "game.db")
+            let connectionString = $"Data Source={dbPath}"
+            use conn = new SqliteConnection(connectionString)
 
-            do! this.Clients.All.SendAsync("ReceiveMove", move)
+            do! conn.OpenAsync()
+            use tx = conn.BeginTransaction()
+        
+            let! result =
+                task {
+                    try
+                        let! player = conn.QuerySingleAsync<string>(
+                            "SELECT PlayerId FROM Player WHERE UserId = @userId",
+                            {| userId = userId |}
+                            )
+
+                        let! eventAction = conn.ExecuteAsync(
+                            """INSERT INTO GameParticipant (GameId, PlayerId, SeatPosition, Role)
+                                VALUES (@GameId, @PlayerId, @SeatPosition, @Role)""",
+                            {| GameId = gameId; PlayerId = player; SeatPosition = seatPosition; Role = role |},
+                            transaction = tx)
+                        return Ok eventAction
+                    with ex ->
+                        return Error ex.Message
+                }
+
+            match result with
+            | Ok r -> 
+                tx.Commit()
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.SetParticipant userId)
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{userId}/{r} added to {gameId}.")
+            | Error err -> 
+                tx.Rollback()
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{err.GetType().Name}: {err}")
         }
 
     member this.ShareUpdate (msg: string) =

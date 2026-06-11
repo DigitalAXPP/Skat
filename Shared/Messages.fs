@@ -15,8 +15,11 @@ type DomainMsg =
     | MoveReceived of string
 
     | GameRoomAdded of string
+    | NewGame
     | GameRoomsReceived of GameRoom list
     | NewGameEvent of roomId : string
+    | CardSelected of string
+    | SetParticipant of player : string
     | ShareClientMsg of string
 
     | ConnectionHubFailed of string

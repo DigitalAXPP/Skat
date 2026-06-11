@@ -51,7 +51,9 @@ module App =
         | AuthMsg of Domain.Msg
         | HubConnected
         | SendJoingame of string
-        | NewGameEvent of string
+        | NewGame of roomid : string
+        | NewGameEvent of roomId : string * message : string
+        | NewParticipant of string * string
         | JoinGameConfirmed
         | EnterGameSucceeded
         | LeaveGameSucceeded
@@ -312,7 +314,7 @@ module App =
                             { model with Login = updated },
                             Cmd.batch [
                                 cmdJoinRoom
-                                Cmd.ofMsg (NewGameEvent roomId)
+                                Cmd.ofMsg (NewParticipant (user.Id.ToString(), roomId))
                                 Cmd.map LoginMsg cmd
                             ]
                         | _, _ -> 
@@ -401,7 +403,7 @@ module App =
             match domainMsg with
             | Messages.GameJoined players ->
                 printfn "Joined game with players: %A" players
-                { model with Status = InLobby; Players = players }, Cmd.none
+                { model with Status = InLobby; Players = model.Players @ players }, Cmd.none
             | Messages.GameLeft ->
                 { model with Status = NotInGame; Players = [] }, Cmd.none
             | Messages.MoveReceived move ->
@@ -410,18 +412,32 @@ module App =
             | Messages.GameRoomAdded id ->
                 printfn "New game room added with ID: %s" id
                 // Handle new game room added if needed
-                model, Cmd.ofMsg (NewGameEvent id)
+                //model, Cmd.ofMsg (NewGameEvent (id, "New game room added"))
+                model, Cmd.ofMsg (NewGame id)
+            | Messages.NewGame ->
+                printfn "New game entry added."
+                // Handle new game notification if needed
+                model, Cmd.none
+
             | Messages.GameRoomsReceived rooms ->
                 printfn "Received game rooms: %A" rooms
                 // Handle received game rooms if needed
                 model, Cmd.ofMsg (LoginMsg (LoginPage.SetRooms rooms))
-            | Messages.NewGameEvent roomId->
+            | Messages.NewGameEvent roomId ->
                 printfn "Received new game event"
                 // Handle new game event if needed
                 model, Cmd.batch [
                     Cmd.ofMsg (LoginMsg (LoginPage.NextGamePage))
                     Cmd.ofMsg (GameMsg (GamePage.InsertRoomId roomId))
                 ]
+            | Messages.CardSelected card ->
+                printfn "Received card selected: %s" card
+                // Handle card selected if needed
+                model, Cmd.none
+            | Messages.SetParticipant player ->
+                printfn "Received set participant: %s" player
+                // Handle set participant if needed
+                model, Cmd.none
             | Messages.ShareClientMsg msg ->
                 printfn "Received shared client message: %s" msg
                 // Handle shared client message if needed
@@ -436,13 +452,13 @@ module App =
         | MessageSendToAllSucceeded ->
             model, Cmd.none
 
-        | NewGameEvent roomId ->
+        | NewGameEvent (roomId, message) ->
             match model.HubService, model.AuthenticatedUser with
             | Some hub, Some user ->
                 let cmdNewGameEvent =
                     Cmd.ofAsyncMsg (async {
                         try
-                            let! rooms = hub.AddGameEvent roomId (user.Id.ToString().ToUpper()) |> Async.AwaitTask
+                            let! rooms = hub.AddGameEvent roomId (user.Id.ToString().ToUpper()) message |> Async.AwaitTask
                             printfn "Received rooms after event: %A" rooms
                             return EnterGameSucceeded
                         with exn ->
@@ -450,6 +466,37 @@ module App =
                     })
                 model, cmdNewGameEvent
             | None, _ ->
+                model, Cmd.none
+
+        | NewGame roomId ->
+            match model.HubService with
+            | Some hub ->
+                let cmdNewGame =
+                    Cmd.ofAsyncMsg (async {
+                        try
+                            do! hub.CreateGame roomId |> Async.AwaitTask
+                            return EnterGameSucceeded
+                        with exn ->
+                            return HubFailure exn.Message
+                    })
+                model, cmdNewGame
+            | None ->
+                model, Cmd.none
+
+        | NewParticipant (user, roomId) ->
+            match model.HubService with
+            | Some hub ->
+                let cmdNewParticipant =
+                    Cmd.ofAsyncMsg (async {
+                        try
+                            let! rooms = hub.NewParticipant roomId (user.ToUpper()) 1 "Player" |> Async.AwaitTask
+                            printfn "Participant added: %A" user
+                            return EnterGameSucceeded
+                        with exn ->
+                            return HubFailure exn.Message
+                    })
+                model, cmdNewParticipant
+            | None ->
                 model, Cmd.none
 
         | HubFailure errorMsg ->

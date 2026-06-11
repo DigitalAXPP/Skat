@@ -41,6 +41,27 @@ module DbInitiliaziation =
         )"""
         cmd.ExecuteNonQuery() |> ignore
 
+        cmd.CommandText <- """CREATE TABLE IF NOT EXISTS GameParticipant (
+            GameId TEXT NOT NULL,
+            PlayerId TEXT NOT NULL,
+            SeatPosition INTEGER NOT NULL,  -- 0, 1, 2 (matters for dealing order)
+            Role TEXT,                       -- 'DECLARER' | 'DEFENDER' | NULL initially
+            PRIMARY KEY (GameId, PlayerId),
+            FOREIGN KEY (GameId) REFERENCES GameEvent (GameId),
+            FOREIGN KEY (PlayerId) REFERENCES Player (PlayerId)
+        )"""
+        cmd.ExecuteNonQuery() |> ignore
+
+        cmd.CommandText <- """CREATE TABLE IF NOT EXISTS Game (
+            GameId TEXT PRIMARY KEY,
+            RoomId TEXT NOT NULL,
+            HandNumber INTEGER NOT NULL DEFAULT 1,
+            Phase TEXT,                        -- 'BIDDING' | 'PICKING_SKAT' | 'PLAYING' | 'SCORING'
+            CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (RoomId) REFERENCES GameRoom (RoomId)
+        )"""
+        cmd.ExecuteNonQuery() |> ignore
+
         cmd.CommandText <- """CREATE TABLE IF NOT EXISTS Users (
             id TEXT PRIMARY KEY,
             username TEXT NOT NULL UNIQUE,
