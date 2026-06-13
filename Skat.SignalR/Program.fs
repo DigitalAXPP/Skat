@@ -52,7 +52,6 @@ type GameHub (
             do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.GetGameRoooms rooms)
         }
     
-    //member this.JoinGame (gameId: string, playerName: string) =
     member this.JoinRoom (roomId: string) (user: string) =
         task {
             let dbPath = Path.Combine("C:\\Users\\apiep\\Documents\\github\\Skat\\Skat.SignalR", "game.db")
@@ -94,13 +93,6 @@ type GameHub (
             | Error err -> 
                 tx.Rollback()
                 do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{err.GetType().Name}: {err}")
-            //do! this.Groups.AddToGroupAsync (this.Context.ConnectionId, gameId)
-            //let players = GameStore.addPlayer gameId playerName
-
-            //do! this.Clients.Group(gameId).SendAsync("ServerMsg", ServerMsgDto.JoinGame (List.ofSeq players))
-            //do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.JoinGame [user])
-            do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{user} joined room {roomId}.")
-            //do! this.Clients.Group(gameId).SendAsync("PlayersUpdate", players)
         }
 
     member this.CreateGame (roomId: string) =
@@ -147,7 +139,6 @@ type GameHub (
             let! result =
                 task {
                     try
-                        //let gameId = System.Guid.NewGuid().ToString().ToUpper()
                         let! gameId = conn.QuerySingleAsync<string>(
                             "SELECT GameId FROM Game WHERE RoomId = @roomId",
                             {| roomId = roomId |}
@@ -169,7 +160,6 @@ type GameHub (
             match result with
             | Ok r -> 
                 tx.Commit()
-                //do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.NewGameEvent roomId)
                 do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{r}/{roomId} created for {userId}.")
             | Error err -> 
                 tx.Rollback()
@@ -218,7 +208,6 @@ type GameHub (
             | Ok r -> 
                 tx.Commit()
                 do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.CardSelected move)
-                //do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.NewGameEvent roomId)
                 do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{userId}/{r} = {move}.")
             | Error err -> 
                 tx.Rollback()

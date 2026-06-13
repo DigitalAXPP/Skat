@@ -7,7 +7,6 @@
 
   <ItemGroup>
     <Compile Include="Domain\Models.fs" />
-    <Compile Include="Persistence\GameRoomRepository.fs" />
     <Compile Include="Library.fs" />
   </ItemGroup>
 

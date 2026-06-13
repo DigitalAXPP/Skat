@@ -6,8 +6,6 @@
 
   <ItemGroup>
     <Compile Include="domain\Models.fs" />
-    <Compile Include="WeatherForecast.fs" />
-    <Compile Include="Controllers/WeatherForecastController.fs" />
     <Folder Include="Persistence\" />
     <Compile Include="persistence\DbInitialization.fs" />
     <Compile Include="persistence\Dapper.fs" />

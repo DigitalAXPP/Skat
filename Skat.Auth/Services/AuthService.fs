@@ -33,7 +33,6 @@ type AuthService
                     let hash = BCrypt.Net.BCrypt.HashPassword password
                     let! userId = users.CreateUser (username, hash)
                     let! playerId = users.CreatePlayer (userId, username)
-                    //let! token = sessions.CreateSession userId
                     return Ok userId
         }
 
@@ -45,7 +44,6 @@ type AuthService
                 match validateHash password user.PasswordHash with
                 | Error msg -> return Error msg
                 | Ok () ->
-                    //let! token = sessions.CreateSession user.Id
                     return Ok user
         }
         

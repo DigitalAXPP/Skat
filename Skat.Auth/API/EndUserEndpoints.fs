@@ -28,7 +28,6 @@ let register (username: string, password: string) =
     })
 
 let login (username: string, password: string) =
-    //Cmd.ofAsyncMsg (async {
     Cmd.ofTaskMsg (task {
             use client = new HttpClient()
             let payload =
@@ -44,7 +43,6 @@ let login (username: string, password: string) =
                     match System.Guid.TryParse(user.user.id) with
                     | true, guid -> guid
                     | false, _ -> failwith "Invalid token format"
-                //let user = { Id = tokenGuid; Username = user.username; PasswordHash = user.passwordHash }
                 let user = { Id = tokenGuid; Username = user.user.username; PasswordHash = user.user.passwordHash }
                 printfn "Login successful: %A" user
                 return LoginSuccess user
@@ -52,9 +50,4 @@ let login (username: string, password: string) =
                 let error = JsonSerializer.Deserialize<{| error: string |}>(body)
                 printfn "Login error: %s" error.error
                 return LoginError error.error
-        //if username = "admin" && password = "password" then
-            //let user = { Id = System.Guid.NewGuid(); Username = username; PasswordHash = "hashed-password" }
-            //return LoginSuccess user
-        //else
-        //    return LoginError "Invalid username or password"
     })
