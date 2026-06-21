@@ -21,6 +21,7 @@
     <Folder Include="Pages\" />
     <Compile Include="pages\HomePage.fs" />
     <Compile Include="pages\LoginPage.fs" />
+    <Compile Include="pages\ReizenPage.fs" />
     <Compile Include="pages\GamePage.fs" />
     <Compile Include="App.fs" />
     <Compile Include="$(DesktopPlatformFolder)Program.fs" />

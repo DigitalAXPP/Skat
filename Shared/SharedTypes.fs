@@ -10,8 +10,15 @@ type Page =
     | PageHome
     /// The login page where a user can enter credentials or authenticate.
     | PageLogin
+    | PageReizen
     /// The game page where the main gameplay UI is presented.
     | PageGame
+
+type EventType =
+    | Bid
+    | CardPlayed
+    | SkatPicked
+    | HandWon
 
 /// Represents a navigation intent used by the application routing logic.
 //
@@ -25,10 +32,12 @@ type Intent =
     | JoinGameRoom of string
     | AllRooms
     | SendMessageToAll of string
+    | NewGameEvent of string * string * EventType * string
     | ForwardUsernameToAuth of string
     | ForwardPasswordToAuth of string
     | RegisterToAuth of string * string
     | LoginToAuth of string * string
+    | ReloadConnection
     | NavigateTo of Page
     /// Navigate to the login page where the user can enter credentials or authenticate.
     | GoToLoginPage

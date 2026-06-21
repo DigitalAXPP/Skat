@@ -24,6 +24,7 @@ type Msg =
     | SetPassword of string
     | SetRooms of GameRoom list
     | NextGamePage
+    | NextReizenPage
     | StartNewGame of string
     | EndGame of string
     | SelectCard of string
@@ -32,6 +33,7 @@ type Msg =
     | NewGameRoom
     | GetAllRooms
     | SelectGameRoom of string
+    | ReloadHubConnection
 
 let init () =
     { 
@@ -50,9 +52,10 @@ let update msg model =
     | ChangeEmail email -> { model with Email = email }, Cmd.none, NoIntent
     | SetPassword password -> { model with PasswordHash = password }, Cmd.none, NoIntent
     | SetRooms rooms -> { model with Rooms = rooms }, Cmd.none, NoIntent
-    | RequestConnection name ->
-        model, Cmd.none, NoIntent
+    //| RequestConnection name ->
+    //    model, Cmd.none, NoIntent
     | NextGamePage -> model, Cmd.none, NavigateTo PageGame
+    | NextReizenPage -> model, Cmd.none, NavigateTo PageReizen
     | StartNewGame name ->
         { model with UserName = name }, Cmd.none, StartGameRequested name
     | EndGame name ->
@@ -67,17 +70,19 @@ let update msg model =
         model, Cmd.none, AllRooms
     | SelectGameRoom roomId ->
         model, Cmd.none, JoinGameRoom roomId
+    | ReloadHubConnection -> model, Cmd.none, ReloadConnection
 
 let view (hub: HubService option) model =
     VStack() {
         TextBlock($"Hub connection: {hub.Value.IsConnected}")
-        TextBlock($"Second Page: {model.UserName}")
-        Button("Connect to hub.", RequestConnection model.UserName)
-        TextBox(model.UserName, ChangeUserName)
-        TextBox(model.Id.ToString(), ChangeId)
-        TextBox(model.Email, ChangeEmail)
-        TextBox(model.PasswordHash, SetPassword)
+        TextBlock($"Authenticated user: {model.UserName}")
+        //Button("Connect to hub.", RequestConnection model.UserName)
+        //TextBox(model.UserName, ChangeUserName)
+        //TextBox(model.Id.ToString(), ChangeId)
+        //TextBox(model.Email, ChangeEmail)
+        //TextBox(model.PasswordHash, SetPassword)
         TextBlock($"Rooms: {model.RoomsLoaded} - {model.Rooms}")
+        Button("Reload", ReloadHubConnection)
         HStack(spacing = 10) {
             ListBox(model.Rooms, fun item ->
                 TextBlock($"Room {item.RoomId}").onTapped(fun _ -> SelectGameRoom item.RoomId))
@@ -88,5 +93,6 @@ let view (hub: HubService option) model =
         Button("Add move", SelectCard "right")
         Button("Create Game Room", NewGameRoom)
         Button("Get Game Rooms", GetAllRooms)
+        Button("Go to Reizen Page", NextReizenPage)
         Button("Go to Game Page", NextGamePage)
     }

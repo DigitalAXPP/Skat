@@ -28,7 +28,7 @@ module App =
     type Model =
         {
             CurrentPage: Page
-            CurrentUser: string option
+            //CurrentUser: string option
             AuthenticatedUser: User option
             Auth: authState
             Status: GameState
@@ -37,6 +37,7 @@ module App =
             AuthModel: Domain.Model
             Home: HomePage.Model
             Login: LoginPage.Model
+            Reizen: ReizenPage.Model
             Game: GamePage.Model
             HubService: HubService option
         }
@@ -45,10 +46,12 @@ module App =
         | NavigateToPage of Page
         | HomeMsg of HomePage.Msg
         | LoginMsg of LoginPage.Msg
+        | ReizenMsg of ReizenPage.Msg
         | GameMsg of GamePage.Msg
         | HubServiceMsg of HubService
         | DomainMsg of Messages.DomainMsg
         | AuthMsg of Domain.Msg
+        | ConnectToHub
         | HubConnected
         | SendJoingame of string
         | NewGame of roomid : string
@@ -74,11 +77,12 @@ module App =
 
         let loginModel, loginCmd = LoginPage.init ()
         let homeModel, homeCmd = HomePage.init
+        let reizenModel, reizenCmd = ReizenPage.init
         let gameModel, gameCmd = GamePage.init
         let authModel = Domain.init
         {
             CurrentPage = PageHome
-            CurrentUser = None
+            //CurrentUser = None
             AuthenticatedUser = None
             Auth = NotAuthenticated
             Status = NotInGame
@@ -87,6 +91,7 @@ module App =
             AuthModel = authModel
             Home = homeModel
             Login = loginModel
+            Reizen = reizenModel
             Game = gameModel
             HubService = None
         }, 
@@ -108,7 +113,7 @@ module App =
             { model with
                 AuthenticatedUser = Some user
                 Auth = Authenticated user
-            }, Cmd.none
+            }, Cmd.ofMsg (ConnectToHub)
         | AuthMsg (LoginError msg) ->
             printfn "Login error: %s" msg
             { model with
@@ -161,24 +166,29 @@ module App =
                     cmdAuth
                     Cmd.map HomeMsg cmd
                 ]
+            | ReloadConnection ->
+                { model with Home = updated }, Cmd.batch [
+                    Cmd.ofMsg HubConnected
+                    Cmd.map HomeMsg cmd
+                ]
             | _ ->
                 { model with Home = updated }, Cmd.map HomeMsg cmd
 
         | LoginMsg m ->
             match m with
-            | LoginPage.RequestConnection name ->
-                match model.HubService with
-                | Some hub ->
-                    let cmd =
-                        Cmd.ofAsyncMsg (
-                            async {
-                                do! hub.Connect() |> Async.AwaitTask
-                                return HubConnected
-                            }
-                        )
-                    { model with CurrentUser = Some name }, cmd
-                | None ->
-                    model, Cmd.none
+            //| LoginPage.RequestConnection name ->
+            //    match model.HubService with
+            //    | Some hub ->
+            //        let cmd =
+            //            Cmd.ofAsyncMsg (
+            //                async {
+            //                    do! hub.Connect() |> Async.AwaitTask
+            //                    return HubConnected
+            //                }
+            //            )
+            //        { model with CurrentUser = Some name }, cmd
+            //    | None ->
+            //        model, Cmd.none
             | _ ->
                 match model.HubService with
                 | Some _ ->
@@ -324,6 +334,28 @@ module App =
                 | None ->
                     model, Cmd.none
 
+        | ReizenMsg m ->
+            match model.HubService with
+            | Some hub ->
+                let updated, cmd, intention = ReizenPage.update m model.Reizen
+                match intention with
+                | Intent.NewGameEvent (roomId, userId, eventType, message) ->
+                    let cmdNewGameEvent =
+                        Cmd.ofAsyncMsg (async {
+                            try
+                                do! hub.NewGameEvent roomId userId (eventType.ToString()) message |> Async.AwaitTask
+                                return EnterGameSucceeded
+                            with exn ->
+                                return HubFailure exn.Message
+                        })
+                    { model with Reizen = updated },
+                    Cmd.batch [
+                        cmdNewGameEvent
+                        Cmd.map ReizenMsg cmd
+                    ]
+                | _ -> { model with Reizen = updated }, Cmd.map ReizenMsg cmd
+            | _ -> model, Cmd.none
+
         | GameMsg m ->
             match model.HubService with
             | Some _ ->
@@ -373,13 +405,27 @@ module App =
                 | _ -> { model with Game = updated }, Cmd.map GameMsg cmd
             | None ->
                 model, Cmd.none
-
-        | HubConnected ->
-            match model.CurrentUser with
-            | Some name ->
-                model, Cmd.ofMsg (SendJoingame name)
+        | ConnectToHub ->
+            match model.HubService with
+            | Some hub ->
+                let cmdConnect =
+                    Cmd.ofAsyncMsg (async {
+                        try
+                            do! hub.Connect() |> Async.AwaitTask
+                            return HubConnected
+                        with exn ->
+                            return HubFailure exn.Message
+                    })
+                model, cmdConnect
             | None ->
                 model, Cmd.none
+        
+        | HubConnected ->
+            match model.AuthenticatedUser with
+            | Some name ->
+                model, Cmd.ofMsg (LoginMsg (LoginPage.ChangeUserName name.Username))
+            | None ->
+                model, Cmd.ofMsg (LoginMsg (LoginPage.ChangeUserName "<Anonymous>"))
 
         | SendJoingame name ->
             match model.HubService with
@@ -401,9 +447,14 @@ module App =
 
         | DomainMsg domainMsg ->
             match domainMsg with
-            | Messages.GameJoined players ->
-                printfn "Joined game with players: %A" players
-                { model with Status = InLobby; Players = model.Players @ players }, Cmd.none
+            | Messages.GameJoined roomId ->
+                printfn "Joined game with room ID: %s" roomId
+                { model with Status = InLobby }, 
+                Cmd.batch [
+                    Cmd.ofMsg (LoginMsg (LoginPage.NextReizenPage))
+                    Cmd.ofMsg (ReizenMsg (ReizenPage.ChangeUserId (model.AuthenticatedUser.Value.Id.ToString())))
+                    Cmd.ofMsg (ReizenMsg (ReizenPage.ChangeRoomId roomId))
+                ]
             | Messages.GameLeft ->
                 { model with Status = NotInGame; Players = [] }, Cmd.none
             | Messages.MoveReceived move ->
@@ -508,6 +559,7 @@ module App =
                 match model.CurrentPage with
                 | PageHome -> View.map HomeMsg (HomePage.view model.Home)
                 | PageLogin -> View.map LoginMsg (LoginPage.view model.HubService model.Login)
+                | PageReizen -> View.map ReizenMsg (ReizenPage.view model.HubService model.Reizen)
                 | PageGame -> View.map GameMsg (GamePage.view model.HubService model.Game)
             )
         )

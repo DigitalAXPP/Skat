@@ -156,3 +156,13 @@ type HubService(
                 | None ->
                     printfn "Not connected to hub."
         }
+
+    member _.NewGameEvent (roomId: string) (userId: string) (eventType: string) (message: string) =
+        task {
+            match hub with
+                | Some connection ->
+                    do! connection.InvokeAsync("NewGameEvent", roomId, userId, eventType, message)
+                    printfn "New game event: %A" eventType
+                | None ->
+                    printfn "Not connected to hub."
+        }

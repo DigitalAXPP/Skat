@@ -10,7 +10,7 @@ type DomainMsg =
     | EnterGame of string
     | LeaveGame of string
 
-    | GameJoined of string list
+    | GameJoined of string
     | GameLeft
     | MoveReceived of string
 

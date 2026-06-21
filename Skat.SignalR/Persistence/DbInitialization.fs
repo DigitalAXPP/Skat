@@ -27,7 +27,8 @@ module DbInitiliaziation =
         cmd.ExecuteNonQuery() |> ignore
 
         cmd.CommandText <- """CREATE TABLE IF NOT EXISTS GameEvent (
-            GameId TEXT PRIMARY KEY,
+            EventId TEXT PRIMARY KEY,
+            GameId TEXT,
             RoomId TEXT,
             PlayerId TEXT,
             HandNumber INTEGER,
@@ -36,6 +37,7 @@ module DbInitiliaziation =
             EventData TEXT,
             Sequence INTEGER,
             CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (GameId) REFERENCES Game (GameId),
             FOREIGN KEY (RoomId) REFERENCES GameRoom (RoomId),
             FOREIGN KEY (PlayerId) REFERENCES Player (PlayerId)
         )"""

@@ -88,7 +88,7 @@ type GameHub (
             match result with
             | Ok r -> 
                 tx.Commit()
-                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.JoinGame user)
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.JoinGame roomId)
                 do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{user}/{r} joined room {roomId}.")
             | Error err -> 
                 tx.Rollback()
@@ -147,9 +147,10 @@ type GameHub (
                             "SELECT PlayerId FROM Player WHERE UserId = @userId",
                             {| userId = userId |}
                             )
+                        let eventId = System.Guid.NewGuid().ToString().ToUpper()
                         let! gameEventId = conn.ExecuteAsync(
-                            "INSERT INTO GameEvent (GameId, RoomId, PlayerId, EventData) VALUES (@GameId, @RoomId, @PlayerId, @Event)",
-                            {| GameId = gameId; RoomId = roomId; PlayerId = player; EventData = event |},
+                            "INSERT INTO GameEvent (EventId, GameId, RoomId, PlayerId, EventData) VALUES (@EventId, @GameId, @RoomId, @PlayerId, @Event)",
+                            {| EventId = eventId; GameId = gameId; RoomId = roomId; PlayerId = player; EventData = event |},
                             transaction = tx)
 
                         return Ok gameEventId
@@ -254,6 +255,46 @@ type GameHub (
     member this.ShareUpdate (msg: string) =
         task {
             do! this.Clients.All.SendAsync("ReceiveMove", msg)
+        }
+
+    member this.NewGameEvent (roomId: string, userId: string, eventType: string, message: string) =
+        task {
+            let dbPath = Path.Combine("C:\\Users\\apiep\\Documents\\github\\Skat\\Skat.SignalR", "game.db")
+            let connectionString = $"Data Source={dbPath}"
+            use conn = new SqliteConnection(connectionString)
+
+            do! conn.OpenAsync()
+            use tx = conn.BeginTransaction()
+        
+            let! result =
+                task {
+                    try
+                        let! gameId = conn.QuerySingleAsync<string>(
+                            "SELECT GameId FROM Game WHERE RoomId = @roomId",
+                            {| roomId = roomId |}
+                            )
+                        let! playerId = conn.QuerySingleAsync<string>(
+                            "SELECT PlayerId FROM Player WHERE UserId = @userId",
+                            {| userId = userId |}
+                            )
+                        let eventId = System.Guid.NewGuid().ToString().ToUpper()
+                        let! eventAction = conn.ExecuteAsync(
+                            """INSERT INTO GameEvent (EventId, GameId, RoomId, PlayerId, EventType, EventData, Sequence)
+                                VALUES (@EventId, @GameId, @RoomId, @PlayerId, @EventType, @EventData, (SELECT COALESCE(MAX(Sequence), 0) + 1 FROM GameEvent WHERE GameId = @GameId))""",
+                            {| EventId = eventId; GameId = gameId; RoomId = roomId; PlayerId = playerId; EventType = eventType; EventData = message |},
+                            transaction = tx)
+                        return Ok eventAction
+                    with ex ->
+                        return Error ex.Message
+                }
+
+            match result with
+            | Ok r -> 
+                tx.Commit()
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{roomId}/{r} added to {message}.")
+            | Error err -> 
+                tx.Rollback()
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{err.GetType().Name}: {err}")
         }
 
 module Program =

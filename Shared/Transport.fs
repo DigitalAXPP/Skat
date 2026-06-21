@@ -4,7 +4,7 @@ open SharedTypes
 open Skat.Game.Domain
 
 type ServerMsgDto =
-    | JoinGame of player : string
+    | JoinGame of roomId : string
     | MoveReceiving of move : string
     | QuitGame
     | NewGameRoom of roomid : string
@@ -17,8 +17,8 @@ type ServerMsgDto =
 
 let toDomainMsg serverMsg =
     match serverMsg with
-    | JoinGame player ->
-        Messages.GameJoined [player]
+    | JoinGame room ->
+        Messages.GameJoined room
     | QuitGame ->
         Messages.GameLeft
     | MoveReceiving move ->
