@@ -20,6 +20,7 @@ type DomainMsg =
     | NewGameEvent of roomId : string
     | CardSelected of string
     | SetParticipant of player : string
+    | BidPlaced of bid : BidEventDto
     | ShareClientMsg of string
 
     | ConnectionHubFailed of string

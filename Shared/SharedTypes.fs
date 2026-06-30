@@ -16,6 +16,8 @@ type Page =
 
 type EventType =
     | Bid
+    | Pass
+    | Accept
     | CardPlayed
     | SkatPicked
     | HandWon
@@ -118,6 +120,19 @@ type GameDetails =
         CurrentTrick : Card list
         Phase : GamePhase 
     }
+
+// Shared between client and server
+type BidEventDto = {
+    PlayerId: string
+    Value: int option   // None = Pass
+    BidStep: string     // "Bid" | "Pass" | "Accept" | "BidWon"
+}
+
+type CardPlayedDto = {
+    PlayerId: string
+    Card: string
+    TrickId: int
+}
 
 let getImageUri (imageName : string) =
     // Return the URI string for the embedded image resource

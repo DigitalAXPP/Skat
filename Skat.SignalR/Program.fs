@@ -18,6 +18,7 @@ open Microsoft.AspNetCore.SignalR
 open SharedTypes
 open Skat.SignalR.Persistence.GameRoom
 open Skat.SignalR.Persistence.DbInitiliaziation
+open System.Text.Json
 open System.Text.Json.Serialization
 open Transport
 open Microsoft.Data.Sqlite
@@ -88,7 +89,9 @@ type GameHub (
             match result with
             | Ok r -> 
                 tx.Commit()
-                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.JoinGame roomId)
+                do! this.Groups.AddToGroupAsync (this.Context.ConnectionId, roomId)
+                do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.JoinGame roomId)
+                //do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.JoinGame roomId)
                 do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{user}/{r} joined room {roomId}.")
             | Error err -> 
                 tx.Rollback()
@@ -278,12 +281,20 @@ type GameHub (
                             {| userId = userId |}
                             )
                         let eventId = System.Guid.NewGuid().ToString().ToUpper()
+                        let b = Int32.TryParse(message)
+                        let result = {
+                            PlayerId = playerId
+                            Value = Some (snd b)
+                            BidStep = eventType
+                        }
+                        let payload = JsonSerializer.Serialize(result)
                         let! eventAction = conn.ExecuteAsync(
                             """INSERT INTO GameEvent (EventId, GameId, RoomId, PlayerId, EventType, EventData, Sequence)
                                 VALUES (@EventId, @GameId, @RoomId, @PlayerId, @EventType, @EventData, (SELECT COALESCE(MAX(Sequence), 0) + 1 FROM GameEvent WHERE GameId = @GameId))""",
-                            {| EventId = eventId; GameId = gameId; RoomId = roomId; PlayerId = playerId; EventType = eventType; EventData = message |},
+                            {| EventId = eventId; GameId = gameId; RoomId = roomId; PlayerId = playerId; EventType = eventType; EventData = payload |},
                             transaction = tx)
-                        return Ok eventAction
+                        
+                        return Ok payload
                     with ex ->
                         return Error ex.Message
                 }
@@ -291,7 +302,19 @@ type GameHub (
             match result with
             | Ok r -> 
                 tx.Commit()
-                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{roomId}/{r} added to {message}.")
+                match eventType with
+                | "Bid" | "Pass" | "ACCEPT" | "BID_WON" ->
+                    let bid = JsonSerializer.Deserialize<BidEventDto>(r)
+                    do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.BidPlaced(bid))
+                    do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{message}.")
+                
+                | "CARD_PLAYED" ->
+                    let card = JsonSerializer.Deserialize<CardPlayedDto>(r)
+                    do! this.Clients.Group(roomId).SendAsync("CardPlayed", card)
+                
+                | _ ->
+                    do! this.Clients.Group(roomId).SendAsync("ServerMsg", $"Unknown event: {eventType}") 
+                    do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{roomId}/{r} added to {message}.")
             | Error err -> 
                 tx.Rollback()
                 do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{err.GetType().Name}: {err}")

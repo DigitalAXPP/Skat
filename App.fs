@@ -489,6 +489,13 @@ module App =
                 printfn "Received set participant: %s" player
                 // Handle set participant if needed
                 model, Cmd.none
+            | Messages.BidPlaced bid ->
+                printfn "Received bid placed: %A" bid
+                // Handle bid placed if needed
+                model, Cmd.batch [
+                    Cmd.ofMsg (ReizenMsg (ReizenPage.ChangeBid (string bid.Value.Value)))
+                    Cmd.ofMsg (ReizenMsg (ReizenPage.ChangeHighestBidder bid.PlayerId))
+                ]
             | Messages.ShareClientMsg msg ->
                 printfn "Received shared client message: %s" msg
                 // Handle shared client message if needed
