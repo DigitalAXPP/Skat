@@ -29,7 +29,6 @@ type Msg =
     | EndGame of string
     | SelectCard of string
     | TellAll of string
-    | RequestConnection of string
     | NewGameRoom
     | GetAllRooms
     | SelectGameRoom of string
@@ -52,8 +51,6 @@ let update msg model =
     | ChangeEmail email -> { model with Email = email }, Cmd.none, NoIntent
     | SetPassword password -> { model with PasswordHash = password }, Cmd.none, NoIntent
     | SetRooms rooms -> { model with Rooms = rooms }, Cmd.none, NoIntent
-    //| RequestConnection name ->
-    //    model, Cmd.none, NoIntent
     | NextGamePage -> model, Cmd.none, NavigateTo PageGame
     | NextReizenPage -> model, Cmd.none, NavigateTo PageReizen
     | StartNewGame name ->
@@ -76,11 +73,6 @@ let view (hub: HubService option) model =
     VStack() {
         TextBlock($"Hub connection: {hub.Value.IsConnected}")
         TextBlock($"Authenticated user: {model.UserName}")
-        //Button("Connect to hub.", RequestConnection model.UserName)
-        //TextBox(model.UserName, ChangeUserName)
-        //TextBox(model.Id.ToString(), ChangeId)
-        //TextBox(model.Email, ChangeEmail)
-        //TextBox(model.PasswordHash, SetPassword)
         TextBlock($"Rooms: {model.RoomsLoaded} - {model.Rooms}")
         Button("Reload", ReloadHubConnection)
         HStack(spacing = 10) {

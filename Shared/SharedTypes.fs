@@ -34,7 +34,7 @@ type Intent =
     | JoinGameRoom of string
     | AllRooms
     | SendMessageToAll of string
-    | NewGameEvent of string * string * EventType * string
+    | NewGameEvent of string * string * EventType * float
     | ForwardUsernameToAuth of string
     | ForwardPasswordToAuth of string
     | RegisterToAuth of string * string
@@ -71,6 +71,7 @@ type Seat =
     | Forehand
     | Middlehand
     | Rearhand
+    | Dealer
 
 type PlayerState =
     { 

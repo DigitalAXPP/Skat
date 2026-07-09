@@ -82,7 +82,6 @@ module App =
         let authModel = Domain.init
         {
             CurrentPage = PageHome
-            //CurrentUser = None
             AuthenticatedUser = None
             Auth = NotAuthenticated
             Status = NotInGame
@@ -100,6 +99,7 @@ module App =
                 Cmd.map LoginMsg loginCmd
                 Cmd.map HomeMsg homeCmd
                 Cmd.map GameMsg gameCmd
+                Cmd.map ReizenMsg reizenCmd
             ]
 
     let navigateToPage model page authState =
@@ -176,19 +176,6 @@ module App =
 
         | LoginMsg m ->
             match m with
-            //| LoginPage.RequestConnection name ->
-            //    match model.HubService with
-            //    | Some hub ->
-            //        let cmd =
-            //            Cmd.ofAsyncMsg (
-            //                async {
-            //                    do! hub.Connect() |> Async.AwaitTask
-            //                    return HubConnected
-            //                }
-            //            )
-            //        { model with CurrentUser = Some name }, cmd
-            //    | None ->
-            //        model, Cmd.none
             | _ ->
                 match model.HubService with
                 | Some _ ->
@@ -343,7 +330,7 @@ module App =
                     let cmdNewGameEvent =
                         Cmd.ofAsyncMsg (async {
                             try
-                                do! hub.NewGameEvent roomId userId (eventType.ToString()) message |> Async.AwaitTask
+                                do! hub.NewGameEvent roomId userId (eventType.ToString()) (message.ToString()) |> Async.AwaitTask
                                 return EnterGameSucceeded
                             with exn ->
                                 return HubFailure exn.Message
@@ -547,7 +534,7 @@ module App =
                 let cmdNewParticipant =
                     Cmd.ofAsyncMsg (async {
                         try
-                            let! rooms = hub.NewParticipant roomId (user.ToUpper()) 1 "Player" |> Async.AwaitTask
+                            let! rooms = hub.NewParticipant (roomId.ToUpper()) (user.ToUpper()) 1 "Player" |> Async.AwaitTask
                             printfn "Participant added: %A" user
                             return EnterGameSucceeded
                         with exn ->

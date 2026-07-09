@@ -91,11 +91,10 @@ type GameHub (
                 tx.Commit()
                 do! this.Groups.AddToGroupAsync (this.Context.ConnectionId, roomId)
                 do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.JoinGame roomId)
-                //do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.JoinGame roomId)
                 do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{user}/{r} joined room {roomId}.")
             | Error err -> 
                 tx.Rollback()
-                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{err.GetType().Name}: {err}")
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"JR = {err.GetType().Name}: {err}")
         }
 
     member this.CreateGame (roomId: string) =
@@ -167,7 +166,7 @@ type GameHub (
                 do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{r}/{roomId} created for {userId}.")
             | Error err -> 
                 tx.Rollback()
-                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{err.GetType().Name}: {err}")
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"AGE = {err.GetType().Name}: {err}")
         }
     
     member this.QuitGame (gameId: string, playerName: string) =
@@ -218,7 +217,7 @@ type GameHub (
                 do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{err.GetType().Name}: {err}")
         }
 
-    member this.SetGameParticipant (userId: string) (gameId: string) (seatPosition: int) (role: string) =
+    member this.SetGameParticipant (roomId: string) (userId: string) (seatPosition: int) (role: string) =
         task {
             let dbPath = Path.Combine("C:\\Users\\apiep\\Documents\\github\\Skat\\Skat.SignalR", "game.db")
             let connectionString = $"Data Source={dbPath}"
@@ -234,11 +233,22 @@ type GameHub (
                             "SELECT PlayerId FROM Player WHERE UserId = @userId",
                             {| userId = userId |}
                             )
+                        let! gameId = conn.QuerySingleAsync<string>(
+                            "SELECT GameId FROM Game WHERE RoomId = @roomId",
+                            {| roomId = roomId |}
+                            )
+
+                        let! rowCount = conn.ExecuteScalarAsync<int>(
+                            """SELECT count(*) FROM GameParticipant
+                                WHERE GameId = @GameId""",
+                            {| GameId = gameId |})
+
+                        let seat = rowCount + 1
 
                         let! eventAction = conn.ExecuteAsync(
-                            """INSERT INTO GameParticipant (GameId, PlayerId, SeatPosition, Role)
-                                VALUES (@GameId, @PlayerId, @SeatPosition, @Role)""",
-                            {| GameId = gameId; PlayerId = player; SeatPosition = seatPosition; Role = role |},
+                            """INSERT INTO GameParticipant (ParticipantId, GameId, PlayerId, SeatPosition, Role)
+                                VALUES (@ParticipantId, @GameId, @PlayerId, @SeatPosition, @Role)""",
+                            {| ParticipantId = System.Guid.NewGuid().ToString().ToUpper(); GameId = gameId.ToUpper(); PlayerId = player.ToUpper(); SeatPosition = seat; Role = role |},
                             transaction = tx)
                         return Ok eventAction
                     with ex ->
@@ -249,10 +259,10 @@ type GameHub (
             | Ok r -> 
                 tx.Commit()
                 do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.SetParticipant userId)
-                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{userId}/{r} added to {gameId}.")
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{userId}/{r} added to {roomId}.")
             | Error err -> 
                 tx.Rollback()
-                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{err.GetType().Name}: {err}")
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"SGP = {err.GetType().Name}: {err}")
         }
 
     member this.ShareUpdate (msg: string) =
@@ -317,7 +327,7 @@ type GameHub (
                     do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{roomId}/{r} added to {message}.")
             | Error err -> 
                 tx.Rollback()
-                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{err.GetType().Name}: {err}")
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"NGE = {err.GetType().Name}: {err}")
         }
 
 module Program =

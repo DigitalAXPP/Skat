@@ -44,12 +44,12 @@ module DbInitiliaziation =
         cmd.ExecuteNonQuery() |> ignore
 
         cmd.CommandText <- """CREATE TABLE IF NOT EXISTS GameParticipant (
+            ParticipantId TEXT PRIMARY KEY,
             GameId TEXT NOT NULL,
             PlayerId TEXT NOT NULL,
             SeatPosition INTEGER NOT NULL,  -- 0, 1, 2 (matters for dealing order)
             Role TEXT,                       -- 'DECLARER' | 'DEFENDER' | NULL initially
-            PRIMARY KEY (GameId, PlayerId),
-            FOREIGN KEY (GameId) REFERENCES GameEvent (GameId),
+            FOREIGN KEY (GameId) REFERENCES Game (GameId),
             FOREIGN KEY (PlayerId) REFERENCES Player (PlayerId)
         )"""
         cmd.ExecuteNonQuery() |> ignore
