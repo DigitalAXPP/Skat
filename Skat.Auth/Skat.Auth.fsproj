@@ -6,23 +6,22 @@
 
   <ItemGroup>
     <Compile Include="domain\Models.fs" />
-    <Folder Include="Persistence\" />
-    <Compile Include="persistence\DbInitialization.fs" />
-    <Compile Include="persistence\Dapper.fs" />
-    <Compile Include="persistence\SessionRepository.fs" />
-    <Compile Include="persistence\UserRepository.fs" />
-    <Folder Include="Services\" />
-    <Compile Include="services\AuthService.fs" />
-    <Folder Include="API\" />
-    <Compile Include="api\EndUserEndpoints.fs" />
-    <Compile Include="api\RegisterEndpoint.fs" />
+    <Compile Include="Persistence\Dapper.fs" />
+    <Compile Include="Persistence\DbInitialization.fs" />
+    <Compile Include="Persistence\SessionRepository.fs" />
+    <Compile Include="Persistence\UserRepository.fs" />
+    <Compile Include="Services\AuthService.fs" />
+<!--    <Compile Include="services\AuthService.fs" />-->
+<!--    <Folder Include="API\" />-->
+    <Compile Include="API\EndUserEndpoints.fs" />
+    <Compile Include="API\RegisterEndpoint.fs" />
     <Compile Include="Update.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Domain\" />
-  </ItemGroup>
+<!--  <ItemGroup>-->
+<!--    <Compile Include="domain\Models.fs" />-->
+<!--  </ItemGroup>-->
 
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />

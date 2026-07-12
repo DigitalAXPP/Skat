@@ -2,7 +2,7 @@ namespace Skat.SignalR.Persistence
 
 open Microsoft.Data.Sqlite
 
-module DbInitiliaziation =
+module DbInitialization =
     let initialize (connectionstring : string) =
         use conn = new SqliteConnection(connectionstring)
         conn.Open()

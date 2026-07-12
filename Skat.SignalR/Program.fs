@@ -17,9 +17,10 @@ open System.Collections.Concurrent
 open Microsoft.AspNetCore.SignalR
 open SharedTypes
 open Skat.SignalR.Persistence.GameRoom
-open Skat.SignalR.Persistence.DbInitiliaziation
+open Skat.SignalR.Persistence.DbInitialization
 open System.Text.Json
 open System.Text.Json.Serialization
+open Skat.SignalR.Persistence.PlayerRepository
 open Transport
 open Microsoft.Data.Sqlite
 open Dapper
@@ -34,7 +35,8 @@ module GameStore =
         players
 
 type GameHub (
-    repo: IGameRoomRepository) =
+    repo: IGameRoomRepository,
+    playerRepo: IPlayerRepository) =
     inherit Hub()
 
     member this.AddGameRoom () =
@@ -55,7 +57,7 @@ type GameHub (
     
     member this.JoinRoom (roomId: string) (user: string) =
         task {
-            let dbPath = Path.Combine("C:\\Users\\apiep\\Documents\\github\\Skat\\Skat.SignalR", "game.db")
+            let dbPath = Path.Combine("/home/mint/Documents/github/Skat/Skat.SignalR", "game.db")
             let connectionString = $"Data Source={dbPath}"
             use conn = new SqliteConnection(connectionString)
 
@@ -99,7 +101,7 @@ type GameHub (
 
     member this.CreateGame (roomId: string) =
         task {
-            let dbPath = Path.Combine("C:\\Users\\apiep\\Documents\\github\\Skat\\Skat.SignalR", "game.db")
+            let dbPath = Path.Combine("/home/mint/Documents/github/Skat/Skat.SignalR", "game.db")
             let connectionString = $"Data Source={dbPath}"
             use conn = new SqliteConnection(connectionString)
 
@@ -131,7 +133,7 @@ type GameHub (
     
     member this.AddGameEvent (roomId: string) (userId: string) (event: string)  =
         task {
-            let dbPath = Path.Combine("C:\\Users\\apiep\\Documents\\github\\Skat\\Skat.SignalR", "game.db")
+            let dbPath = Path.Combine("/home/mint/Documents/github/Skat/Skat.SignalR", "game.db")
             let connectionString = $"Data Source={dbPath}"
             use conn = new SqliteConnection(connectionString)
 
@@ -145,14 +147,15 @@ type GameHub (
                             "SELECT GameId FROM Game WHERE RoomId = @roomId",
                             {| roomId = roomId |}
                             )
-                        let! player = conn.QuerySingleAsync<string>(
-                            "SELECT PlayerId FROM Player WHERE UserId = @userId",
-                            {| userId = userId |}
-                            )
+                        // let! player = conn.QuerySingleAsync<string>(
+                        //     "SELECT PlayerId FROM Player WHERE UserId = @userId",
+                        //     {| userId = userId |}
+                        //     )
+                        let! player = playerRepo.GetPlayerIdByUserId userId
                         let eventId = System.Guid.NewGuid().ToString().ToUpper()
                         let! gameEventId = conn.ExecuteAsync(
                             "INSERT INTO GameEvent (EventId, GameId, RoomId, PlayerId, EventData) VALUES (@EventId, @GameId, @RoomId, @PlayerId, @Event)",
-                            {| EventId = eventId; GameId = gameId; RoomId = roomId; PlayerId = player; EventData = event |},
+                            {| EventId = eventId; GameId = gameId; RoomId = roomId; PlayerId = player.Value.ToString(); EventData = event |},
                             transaction = tx)
 
                         return Ok gameEventId
@@ -181,7 +184,7 @@ type GameHub (
 
     member this.SendMove (move: string, userId: string) =
         task {
-            let dbPath = Path.Combine("C:\\Users\\apiep\\Documents\\github\\Skat\\Skat.SignalR", "game.db")
+            let dbPath = Path.Combine("/home/mint/Documents/github/Skat/Skat.SignalR", "game.db")
             let connectionString = $"Data Source={dbPath}"
             use conn = new SqliteConnection(connectionString)
 
@@ -219,7 +222,7 @@ type GameHub (
 
     member this.SetGameParticipant (roomId: string) (userId: string) (seatPosition: int) (role: string) =
         task {
-            let dbPath = Path.Combine("C:\\Users\\apiep\\Documents\\github\\Skat\\Skat.SignalR", "game.db")
+            let dbPath = Path.Combine("/home/mint/Documents/github/Skat/Skat.SignalR", "game.db")
             let connectionString = $"Data Source={dbPath}"
             use conn = new SqliteConnection(connectionString)
 
@@ -229,10 +232,11 @@ type GameHub (
             let! result =
                 task {
                     try
-                        let! player = conn.QuerySingleAsync<string>(
-                            "SELECT PlayerId FROM Player WHERE UserId = @userId",
-                            {| userId = userId |}
-                            )
+                        // let! player = conn.QuerySingleAsync<string>(
+                        //     "SELECT PlayerId FROM Player WHERE UserId = @userId",
+                        //     {| userId = userId |}
+                        //     )
+                        let! player = playerRepo.GetPlayerIdByUserId userId
                         let! gameId = conn.QuerySingleAsync<string>(
                             "SELECT GameId FROM Game WHERE RoomId = @roomId",
                             {| roomId = roomId |}
@@ -248,7 +252,7 @@ type GameHub (
                         let! eventAction = conn.ExecuteAsync(
                             """INSERT INTO GameParticipant (ParticipantId, GameId, PlayerId, SeatPosition, Role)
                                 VALUES (@ParticipantId, @GameId, @PlayerId, @SeatPosition, @Role)""",
-                            {| ParticipantId = System.Guid.NewGuid().ToString().ToUpper(); GameId = gameId.ToUpper(); PlayerId = player.ToUpper(); SeatPosition = seat; Role = role |},
+                            {| ParticipantId = System.Guid.NewGuid().ToString().ToUpper(); GameId = gameId.ToUpper(); PlayerId = player.Value.ToUpper(); SeatPosition = seat; Role = role |},
                             transaction = tx)
                         return Ok eventAction
                     with ex ->
@@ -272,7 +276,7 @@ type GameHub (
 
     member this.NewGameEvent (roomId: string, userId: string, eventType: string, message: string) =
         task {
-            let dbPath = Path.Combine("C:\\Users\\apiep\\Documents\\github\\Skat\\Skat.SignalR", "game.db")
+            let dbPath = Path.Combine("/home/mint/Documents/github/Skat/Skat.SignalR", "game.db")
             let connectionString = $"Data Source={dbPath}"
             use conn = new SqliteConnection(connectionString)
 
@@ -343,6 +347,8 @@ module Program =
         builder.Services
             .AddScoped<IGameRoomRepository>(fun _ ->
                 GameRoomRepository (connectionString) :> IGameRoomRepository)
+            .AddScoped<IPlayerRepository>(fun _ ->
+                PlayerRepository (connectionString) :> IPlayerRepository)
             .AddSignalR()
             .AddJsonProtocol(fun options ->
                 options.PayloadSerializerOptions.Converters.Add(JsonFSharpConverter()))

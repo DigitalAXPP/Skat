@@ -11,24 +11,25 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <Folder Include="Resources\Images\" />
+<!--    <Folder Include="Resources/Images/" />-->
     <Compile Include="shared\JsonConversion.fs" />
     <Compile Include="shared\HubMethods.fs" />
-    <Compile Include="shared\SharedTypes.fs" />
-    <Compile Include="shared\Messages.fs" />
-    <Compile Include="shared\Transport.fs" />
-    <Compile Include="SignalRClient.fs" />
-    <Folder Include="Pages\" />
-    <Compile Include="pages\HomePage.fs" />
-    <Compile Include="pages\LoginPage.fs" />
-    <Compile Include="pages\ReizenPage.fs" />
-    <Compile Include="pages\GamePage.fs" />
+      <Compile Include="shared\SharedTypes.fs" />
+      <Compile Include="shared\Messages.fs" />
+      <Compile Include="shared\Transport.fs" />
+      <Compile Include="SignalRClient.fs" />
+      <Compile Include="Pages\GamePage.fs" />
+      <Compile Include="Pages\LoginPage.fs" />
+      <Compile Include="Pages\ReizenPage.fs" />
+      <Compile Include="Pages\HomePage.fs" />
+      <!--    <Compile Include="pages\HomePage.fs" />-->
+<!--    <Compile Include="pages\LoginPage.fs" />-->
     <Compile Include="App.fs" />
     <Compile Include="$(DesktopPlatformFolder)Program.fs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Properties\**" />
-    <AvaloniaResource Include="Resources\Images\**" />
+    <None Include="Properties/**" />
+    <AvaloniaResource Include="Resources/Images/**" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.14" />
@@ -43,7 +44,7 @@
     <PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="Skat.Game\Skat.Game.fsproj" />
-    <ProjectReference Include="Skat.Auth\Skat.Auth.fsproj" />
+    <ProjectReference Include="Skat.Game/Skat.Game.fsproj" />
+    <ProjectReference Include="Skat.Auth/Skat.Auth.fsproj" />
   </ItemGroup>
 </Project>

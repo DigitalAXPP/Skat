@@ -42,7 +42,7 @@ module Program =
         builder.Services.AddScoped<AuthService>() |> ignore
 
         //let dbPath = Path.Combine(builder.Environment.ContentRootPath, "auth.db")
-        let dbPath = Path.Combine("C:\\Users\\apiep\\Documents\\github\\Skat\\Skat.SignalR", "game.db")
+        let dbPath = Path.Combine("/home/mint/Documents/github/Skat/Skat.SignalR", "game.db")
         let connectionString = $"Data Source={dbPath}"
         builder.Services.AddScoped<IUserRepository>(fun _ ->
             UserRepository(connectionString) :> IUserRepository)
@@ -51,13 +51,13 @@ module Program =
 
         let app = builder.Build()
 
-        //initialize(connectionString)
+        // initialize(connectionString)
 
         app.UseHttpsRedirection()
 
         app.UseAuthorization()
         app.MapControllers()
-
+    
         mapRegisterEndpoint app
 
         app.Run()
