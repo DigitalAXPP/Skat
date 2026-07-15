@@ -16,6 +16,7 @@ open Microsoft.Extensions.Logging
 open System.Collections.Concurrent
 open Microsoft.AspNetCore.SignalR
 open SharedTypes
+open Skat.SignalR.Persistence.GameRepository
 open Skat.SignalR.Persistence.GameRoom
 open Skat.SignalR.Persistence.DbInitialization
 open System.Text.Json
@@ -36,7 +37,8 @@ module GameStore =
 
 type GameHub (
     repo: IGameRoomRepository,
-    playerRepo: IPlayerRepository) =
+    playerRepo: IPlayerRepository,
+    gameRepo: IGameRepository) =
     inherit Hub()
 
     member this.AddGameRoom () =
@@ -72,10 +74,11 @@ type GameHub (
                             {| username = user |}
                         )
 
-                        do! conn.ExecuteAsync(
-                            "UPDATE Player SET RoomId = @RoomId WHERE UserId = @UserId",
-                                {| RoomId = roomId; UserId = userId |},
-                                transaction = tx) :> Task
+                        // do! conn.ExecuteAsync(
+                        //     "UPDATE Player SET RoomId = @RoomId WHERE UserId = @UserId",
+                        //         {| RoomId = roomId; UserId = userId |},
+                        //         transaction = tx) :> Task
+                        let! _ = playerRepo.UpdatePlayerRoom(userId, roomId, tx)
 
                         do! conn.ExecuteAsync(
                             """UPDATE GameRoom 
@@ -83,6 +86,7 @@ type GameHub (
                                 WHERE RoomId = @RoomId AND CurrentPlayer < MaxPlayer""",
                             {| RoomId = roomId |},
                             transaction = tx) :> Task
+                        // let! _ = gameRepo.IncrementPlayerCount(roomId)
                         return Ok userId
                     with ex ->
                         return Error ex.Message
@@ -112,10 +116,11 @@ type GameHub (
                 task {
                     try
                         let gameId = System.Guid.NewGuid().ToString().ToUpper()
-                        let! game = conn.ExecuteAsync(
-                            "INSERT INTO Game (GameId, RoomId, HandNumber, Phase) VALUES (@GameId, @RoomId, @HandNumber, @Phase)",
-                            {| GameId = gameId; RoomId = roomId; HandNumber = 0; Phase = "Setup" |},
-                            transaction = tx)
+                        // let! game = conn.ExecuteAsync(
+                        //     "INSERT INTO Game (GameId, RoomId, HandNumber, Phase) VALUES (@GameId, @RoomId, @HandNumber, @Phase)",
+                        //     {| GameId = gameId; RoomId = roomId; HandNumber = 0; Phase = "Setup" |},
+                        //     transaction = tx)
+                        let! game = gameRepo.InsertGame(gameId, roomId, tx)
 
                         return Ok game
                     with ex ->
@@ -147,15 +152,16 @@ type GameHub (
                             "SELECT GameId FROM Game WHERE RoomId = @roomId",
                             {| roomId = roomId |}
                             )
-                        // let! player = conn.QuerySingleAsync<string>(
-                        //     "SELECT PlayerId FROM Player WHERE UserId = @userId",
-                        //     {| userId = userId |}
-                        //     )
-                        let! player = playerRepo.GetPlayerIdByUserId userId
+                        // let! gameId = gameRepo.GetGameIdByRoomId roomId
+                        let! player = conn.QuerySingleAsync<string>(
+                            "SELECT PlayerId FROM Player WHERE UserId = @userId",
+                            {| userId = userId |}
+                            )
+                        // let! player = playerRepo.GetPlayerIdByUserId userId
                         let eventId = System.Guid.NewGuid().ToString().ToUpper()
                         let! gameEventId = conn.ExecuteAsync(
                             "INSERT INTO GameEvent (EventId, GameId, RoomId, PlayerId, EventData) VALUES (@EventId, @GameId, @RoomId, @PlayerId, @Event)",
-                            {| EventId = eventId; GameId = gameId; RoomId = roomId; PlayerId = player.Value.ToString(); EventData = event |},
+                            {| EventId = eventId; GameId = gameId; RoomId = roomId; PlayerId = player; EventData = event |},
                             transaction = tx)
 
                         return Ok gameEventId
@@ -236,23 +242,24 @@ type GameHub (
                         //     "SELECT PlayerId FROM Player WHERE UserId = @userId",
                         //     {| userId = userId |}
                         //     )
-                        let! player = playerRepo.GetPlayerIdByUserId userId
-                        let! gameId = conn.QuerySingleAsync<string>(
-                            "SELECT GameId FROM Game WHERE RoomId = @roomId",
-                            {| roomId = roomId |}
-                            )
+                        let! player = playerRepo.GetPlayerIdByUserId (userId, tx)
+                        let! gameId = gameRepo.GetGameIdByRoomId roomId
+                        // let! gameId = conn.QuerySingleAsync<string>(
+                        //     "SELECT GameId FROM Game WHERE RoomId = @roomId",
+                        //     {| roomId = roomId |}
+                        //     )
 
                         let! rowCount = conn.ExecuteScalarAsync<int>(
                             """SELECT count(*) FROM GameParticipant
                                 WHERE GameId = @GameId""",
-                            {| GameId = gameId |})
+                            {| GameId = gameId.Value.ToUpper() |})
 
                         let seat = rowCount + 1
 
                         let! eventAction = conn.ExecuteAsync(
                             """INSERT INTO GameParticipant (ParticipantId, GameId, PlayerId, SeatPosition, Role)
                                 VALUES (@ParticipantId, @GameId, @PlayerId, @SeatPosition, @Role)""",
-                            {| ParticipantId = System.Guid.NewGuid().ToString().ToUpper(); GameId = gameId.ToUpper(); PlayerId = player.Value.ToUpper(); SeatPosition = seat; Role = role |},
+                            {| ParticipantId = System.Guid.NewGuid().ToString().ToUpper(); GameId = gameId.Value.ToUpper(); PlayerId = player.Value.ToUpper(); SeatPosition = seat; Role = role |},
                             transaction = tx)
                         return Ok eventAction
                     with ex ->
@@ -286,18 +293,20 @@ type GameHub (
             let! result =
                 task {
                     try
-                        let! gameId = conn.QuerySingleAsync<string>(
-                            "SELECT GameId FROM Game WHERE RoomId = @roomId",
-                            {| roomId = roomId |}
-                            )
-                        let! playerId = conn.QuerySingleAsync<string>(
-                            "SELECT PlayerId FROM Player WHERE UserId = @userId",
-                            {| userId = userId |}
-                            )
+                        // let! gameId = conn.QuerySingleAsync<string>(
+                        //     "SELECT GameId FROM Game WHERE RoomId = @roomId",
+                        //     {| roomId = roomId |}
+                        //     )
+                        // let! playerId = conn.QuerySingleAsync<string>(
+                        //     "SELECT PlayerId FROM Player WHERE UserId = @userId",
+                        //     {| userId = userId |}
+                        //     )
+                        let! playerId = playerRepo.GetPlayerIdByUserId userId
+                        let! gameId = gameRepo.GetGameIdByRoomId roomId
                         let eventId = System.Guid.NewGuid().ToString().ToUpper()
                         let b = Int32.TryParse(message)
                         let result = {
-                            PlayerId = playerId
+                            PlayerId = playerId.Value.ToUpper()
                             Value = Some (snd b)
                             BidStep = eventType
                         }
@@ -305,7 +314,7 @@ type GameHub (
                         let! eventAction = conn.ExecuteAsync(
                             """INSERT INTO GameEvent (EventId, GameId, RoomId, PlayerId, EventType, EventData, Sequence)
                                 VALUES (@EventId, @GameId, @RoomId, @PlayerId, @EventType, @EventData, (SELECT COALESCE(MAX(Sequence), 0) + 1 FROM GameEvent WHERE GameId = @GameId))""",
-                            {| EventId = eventId; GameId = gameId; RoomId = roomId; PlayerId = playerId; EventType = eventType; EventData = payload |},
+                            {| EventId = eventId; GameId = gameId.Value.ToUpper(); RoomId = roomId; PlayerId = playerId.Value.ToUpper(); EventType = eventType; EventData = payload |},
                             transaction = tx)
                         
                         return Ok payload
@@ -349,6 +358,8 @@ module Program =
                 GameRoomRepository (connectionString) :> IGameRoomRepository)
             .AddScoped<IPlayerRepository>(fun _ ->
                 PlayerRepository (connectionString) :> IPlayerRepository)
+            .AddScoped<IGameRepository>(fun _ ->
+                GameRepository (connectionString) :> IGameRepository)
             .AddSignalR()
             .AddJsonProtocol(fun options ->
                 options.PayloadSerializerOptions.Converters.Add(JsonFSharpConverter()))

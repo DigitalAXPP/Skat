@@ -9,6 +9,7 @@
 <!--    <Compile Include="persistence\DbInitialization.fs" />-->
     <Compile Include="Persistence\DbInitialization.fs" />
     <Compile Include="Persistence\PlayerRepository.fs" />
+    <Compile Include="Persistence\GameRepository.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
