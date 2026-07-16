@@ -12,6 +12,7 @@
     <Compile Include="Persistence\GameRepository.fs" />
     <Compile Include="Persistence\UserRepository.fs" />
     <Compile Include="Persistence\GameParticipantRepository.fs" />
+    <Compile Include="Persistence\GameEventRepository.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
