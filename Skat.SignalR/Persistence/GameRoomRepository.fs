@@ -1,5 +1,6 @@
 namespace Skat.SignalR.Persistence
 
+open System.Data
 open Skat.Game.Domain
 open System.Threading.Tasks
 open Microsoft.Data.Sqlite
@@ -11,6 +12,7 @@ module GameRoom =
         abstract member GetRoom : RoomId: string -> Task<GameRoom option>
         abstract member GetAllRooms : unit -> Task<GameRoom list>
         abstract member InsertRoom : unit -> Task<string>
+        abstract member IncrementPlayerCount : RoomId : string * ?tx : IDbTransaction -> Task<int>
 
     type GameRoomRepository (connectionstring: string) =
         let mutable rooms : Map<string, GameRoom> = Map.empty
@@ -45,4 +47,24 @@ module GameRoom =
                         {| roomId = roomId; maxPlayer = 4; currentPlayer = 0 |}
                     )
                 return roomId
+            }
+            
+            member _.IncrementPlayerCount(RoomId: string, tx: IDbTransaction option) = task {
+                match tx with
+                | Some t ->
+                    let! _ = t.Connection.ExecuteAsync(
+                            """UPDATE GameRoom 
+                                SET CurrentPlayer = CurrentPlayer + 1
+                                WHERE RoomId = @RoomId AND CurrentPlayer < MaxPlayer""",
+                            {| RoomId = RoomId |},
+                            transaction = t)
+                    return 0
+                | None ->
+                    use conn = new SqliteConnection(connectionstring)
+                    let! _ = conn.ExecuteAsync(
+                            """UPDATE GameRoom 
+                                SET CurrentPlayer = CurrentPlayer + 1
+                                WHERE RoomId = @RoomId AND CurrentPlayer < MaxPlayer""",
+                            {| RoomId = RoomId |})
+                    return 0
             }

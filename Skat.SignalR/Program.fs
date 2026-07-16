@@ -16,12 +16,14 @@ open Microsoft.Extensions.Logging
 open System.Collections.Concurrent
 open Microsoft.AspNetCore.SignalR
 open SharedTypes
+open Skat.SignalR.Persistence.GameParticipantRepository
 open Skat.SignalR.Persistence.GameRepository
 open Skat.SignalR.Persistence.GameRoom
 open Skat.SignalR.Persistence.DbInitialization
 open System.Text.Json
 open System.Text.Json.Serialization
 open Skat.SignalR.Persistence.PlayerRepository
+open Skat.SignalR.Persistence.UserRepository
 open Transport
 open Microsoft.Data.Sqlite
 open Dapper
@@ -38,7 +40,9 @@ module GameStore =
 type GameHub (
     repo: IGameRoomRepository,
     playerRepo: IPlayerRepository,
-    gameRepo: IGameRepository) =
+    gameRepo: IGameRepository,
+    userRepo: IUserRepository,
+    participantRepo: IGameParticipantRepository) =
     inherit Hub()
 
     member this.AddGameRoom () =
@@ -69,24 +73,25 @@ type GameHub (
             let! result =
                 task {
                     try
-                        let! userId = conn.QuerySingleAsync<string>(
-                            "SELECT id FROM Users WHERE username = @username",
-                            {| username = user |}
-                        )
-
+                        // let! userId = conn.QuerySingleAsync<string>(
+                        //     "SELECT id FROM Users WHERE username = @username",
+                        //     {| username = user |}
+                        // )
+                        let! userId = userRepo.GetUserId(user, tx)
                         // do! conn.ExecuteAsync(
                         //     "UPDATE Player SET RoomId = @RoomId WHERE UserId = @UserId",
                         //         {| RoomId = roomId; UserId = userId |},
                         //         transaction = tx) :> Task
-                        let! _ = playerRepo.UpdatePlayerRoom(userId, roomId, tx)
+                        let! _ = playerRepo.UpdatePlayerRoom(userId.Value.ToUpper(), roomId, tx)
 
-                        do! conn.ExecuteAsync(
-                            """UPDATE GameRoom 
-                                SET CurrentPlayer = CurrentPlayer + 1
-                                WHERE RoomId = @RoomId AND CurrentPlayer < MaxPlayer""",
-                            {| RoomId = roomId |},
-                            transaction = tx) :> Task
-                        // let! _ = gameRepo.IncrementPlayerCount(roomId)
+                        // do! conn.ExecuteAsync(
+                        //     """UPDATE GameRoom 
+                        //         SET CurrentPlayer = CurrentPlayer + 1
+                        //         WHERE RoomId = @RoomId AND CurrentPlayer < MaxPlayer""",
+                        //     {| RoomId = roomId |},
+                        //     transaction = tx) :> Task
+                        
+                        let! _ = repo.IncrementPlayerCount(roomId, tx)
                         return Ok userId
                     with ex ->
                         return Error ex.Message
@@ -136,47 +141,47 @@ type GameHub (
                 do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{err.GetType().Name}: {err}")
         }
     
-    member this.AddGameEvent (roomId: string) (userId: string) (event: string)  =
-        task {
-            let dbPath = Path.Combine("/home/mint/Documents/github/Skat/Skat.SignalR", "game.db")
-            let connectionString = $"Data Source={dbPath}"
-            use conn = new SqliteConnection(connectionString)
-
-            do! conn.OpenAsync()
-            use tx = conn.BeginTransaction()
-
-            let! result =
-                task {
-                    try
-                        let! gameId = conn.QuerySingleAsync<string>(
-                            "SELECT GameId FROM Game WHERE RoomId = @roomId",
-                            {| roomId = roomId |}
-                            )
-                        // let! gameId = gameRepo.GetGameIdByRoomId roomId
-                        let! player = conn.QuerySingleAsync<string>(
-                            "SELECT PlayerId FROM Player WHERE UserId = @userId",
-                            {| userId = userId |}
-                            )
-                        // let! player = playerRepo.GetPlayerIdByUserId userId
-                        let eventId = System.Guid.NewGuid().ToString().ToUpper()
-                        let! gameEventId = conn.ExecuteAsync(
-                            "INSERT INTO GameEvent (EventId, GameId, RoomId, PlayerId, EventData) VALUES (@EventId, @GameId, @RoomId, @PlayerId, @Event)",
-                            {| EventId = eventId; GameId = gameId; RoomId = roomId; PlayerId = player; EventData = event |},
-                            transaction = tx)
-
-                        return Ok gameEventId
-                    with ex ->
-                        return Error ex.Message
-                }
-
-            match result with
-            | Ok r -> 
-                tx.Commit()
-                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{r}/{roomId} created for {userId}.")
-            | Error err -> 
-                tx.Rollback()
-                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"AGE = {err.GetType().Name}: {err}")
-        }
+    // member this.AddGameEvent (roomId: string) (userId: string) (event: string)  =
+    //     task {
+    //         let dbPath = Path.Combine("/home/mint/Documents/github/Skat/Skat.SignalR", "game.db")
+    //         let connectionString = $"Data Source={dbPath}"
+    //         use conn = new SqliteConnection(connectionString)
+    //
+    //         do! conn.OpenAsync()
+    //         use tx = conn.BeginTransaction()
+    //
+    //         let! result =
+    //             task {
+    //                 try
+    //                     let! gameId = conn.QuerySingleAsync<string>(
+    //                         "SELECT GameId FROM Game WHERE RoomId = @roomId",
+    //                         {| roomId = roomId |}
+    //                         )
+    //                     // let! gameId = gameRepo.GetGameIdByRoomId roomId
+    //                     let! player = conn.QuerySingleAsync<string>(
+    //                         "SELECT PlayerId FROM Player WHERE UserId = @userId",
+    //                         {| userId = userId |}
+    //                         )
+    //                     // let! player = playerRepo.GetPlayerIdByUserId userId
+    //                     let eventId = System.Guid.NewGuid().ToString().ToUpper()
+    //                     let! gameEventId = conn.ExecuteAsync(
+    //                         "INSERT INTO GameEvent (EventId, GameId, RoomId, PlayerId, EventData) VALUES (@EventId, @GameId, @RoomId, @PlayerId, @Event)",
+    //                         {| EventId = eventId; GameId = gameId; RoomId = roomId; PlayerId = player; EventData = event |},
+    //                         transaction = tx)
+    //
+    //                     return Ok gameEventId
+    //                 with ex ->
+    //                     return Error ex.Message
+    //             }
+    //
+    //         match result with
+    //         | Ok r -> 
+    //             tx.Commit()
+    //             do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{r}/{roomId} created for {userId}.")
+    //         | Error err -> 
+    //             tx.Rollback()
+    //             do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"AGE = {err.GetType().Name}: {err}")
+    //     }
     
     member this.QuitGame (gameId: string, playerName: string) =
         task {
@@ -188,43 +193,43 @@ type GameHub (
             | _ -> ()
         }
 
-    member this.SendMove (move: string, userId: string) =
-        task {
-            let dbPath = Path.Combine("/home/mint/Documents/github/Skat/Skat.SignalR", "game.db")
-            let connectionString = $"Data Source={dbPath}"
-            use conn = new SqliteConnection(connectionString)
-
-            do! conn.OpenAsync()
-            use tx = conn.BeginTransaction()
-
-            let! result =
-                task {
-                    try
-                        let! player = conn.QuerySingleAsync<string>(
-                            "SELECT PlayerId FROM Player WHERE UserId = @userId",
-                            {| userId = userId |}
-                            )
-
-                        let! eventAction = conn.ExecuteAsync(
-                            """UPDATE GameEvent 
-                                SET HandNumber = @HandNumber, Phase = @Phase, EventType = @EventType, EventData = @EventData, Sequence = @Sequence
-                                WHERE PlayerId = @PlayerId""",
-                            {| HandNumber = 1; Phase = "first"; EventType = "Hand"; EventData = move; Sequence = "Second"; PlayerId = player |},
-                            transaction = tx)
-                        return Ok eventAction
-                    with ex ->
-                        return Error ex.Message
-                }
-
-            match result with
-            | Ok r -> 
-                tx.Commit()
-                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.CardSelected move)
-                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{userId}/{r} = {move}.")
-            | Error err -> 
-                tx.Rollback()
-                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{err.GetType().Name}: {err}")
-        }
+    // member this.SendMove (move: string, userId: string) =
+    //     task {
+    //         let dbPath = Path.Combine("/home/mint/Documents/github/Skat/Skat.SignalR", "game.db")
+    //         let connectionString = $"Data Source={dbPath}"
+    //         use conn = new SqliteConnection(connectionString)
+    //
+    //         do! conn.OpenAsync()
+    //         use tx = conn.BeginTransaction()
+    //
+    //         let! result =
+    //             task {
+    //                 try
+    //                     let! player = conn.QuerySingleAsync<string>(
+    //                         "SELECT PlayerId FROM Player WHERE UserId = @userId",
+    //                         {| userId = userId |}
+    //                         )
+    //
+    //                     let! eventAction = conn.ExecuteAsync(
+    //                         """UPDATE GameEvent 
+    //                             SET HandNumber = @HandNumber, Phase = @Phase, EventType = @EventType, EventData = @EventData, Sequence = @Sequence
+    //                             WHERE PlayerId = @PlayerId""",
+    //                         {| HandNumber = 1; Phase = "first"; EventType = "Hand"; EventData = move; Sequence = "Second"; PlayerId = player |},
+    //                         transaction = tx)
+    //                     return Ok eventAction
+    //                 with ex ->
+    //                     return Error ex.Message
+    //             }
+    //
+    //         match result with
+    //         | Ok r -> 
+    //             tx.Commit()
+    //             do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.CardSelected move)
+    //             do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{userId}/{r} = {move}.")
+    //         | Error err -> 
+    //             tx.Rollback()
+    //             do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{err.GetType().Name}: {err}")
+    //     }
 
     member this.SetGameParticipant (roomId: string) (userId: string) (seatPosition: int) (role: string) =
         task {
@@ -242,25 +247,27 @@ type GameHub (
                         //     "SELECT PlayerId FROM Player WHERE UserId = @userId",
                         //     {| userId = userId |}
                         //     )
-                        let! player = playerRepo.GetPlayerIdByUserId (userId, tx)
+                        let! playerId = playerRepo.GetPlayerIdByUserId (userId, tx)
                         let! gameId = gameRepo.GetGameIdByRoomId roomId
                         // let! gameId = conn.QuerySingleAsync<string>(
                         //     "SELECT GameId FROM Game WHERE RoomId = @roomId",
                         //     {| roomId = roomId |}
                         //     )
 
-                        let! rowCount = conn.ExecuteScalarAsync<int>(
-                            """SELECT count(*) FROM GameParticipant
-                                WHERE GameId = @GameId""",
-                            {| GameId = gameId.Value.ToUpper() |})
+                        // let! rowCount = conn.ExecuteScalarAsync<int>(
+                        //     """SELECT count(*) FROM GameParticipant
+                        //         WHERE GameId = @GameId""",
+                        //     {| GameId = gameId.Value.ToUpper() |})
+                        let! rowCount = participantRepo.GetParticipantCount(gameId.Value.ToUpper(), tx)
 
                         let seat = rowCount + 1
 
-                        let! eventAction = conn.ExecuteAsync(
-                            """INSERT INTO GameParticipant (ParticipantId, GameId, PlayerId, SeatPosition, Role)
-                                VALUES (@ParticipantId, @GameId, @PlayerId, @SeatPosition, @Role)""",
-                            {| ParticipantId = System.Guid.NewGuid().ToString().ToUpper(); GameId = gameId.Value.ToUpper(); PlayerId = player.Value.ToUpper(); SeatPosition = seat; Role = role |},
-                            transaction = tx)
+                        // let! eventAction = conn.ExecuteAsync(
+                        //     """INSERT INTO GameParticipant (ParticipantId, GameId, PlayerId, SeatPosition, Role)
+                        //         VALUES (@ParticipantId, @GameId, @PlayerId, @SeatPosition, @Role)""",
+                        //     {| ParticipantId = System.Guid.NewGuid().ToString().ToUpper(); GameId = gameId.Value.ToUpper(); PlayerId = player.Value.ToUpper(); SeatPosition = seat; Role = role |},
+                        //     transaction = tx)
+                        let! eventAction = participantRepo.InsertParticipant(gameId.Value.ToUpper(), playerId.Value.ToUpper(),seat, tx)
                         return Ok eventAction
                     with ex ->
                         return Error ex.Message
@@ -360,6 +367,10 @@ module Program =
                 PlayerRepository (connectionString) :> IPlayerRepository)
             .AddScoped<IGameRepository>(fun _ ->
                 GameRepository (connectionString) :> IGameRepository)
+            .AddScoped<IUserRepository>(fun _ ->
+                UserRepository (connectionString) :> IUserRepository)
+            .AddScoped<IGameParticipantRepository>(fun _ ->
+                GameParticipantRepository (connectionString) :> IGameParticipantRepository)
             .AddSignalR()
             .AddJsonProtocol(fun options ->
                 options.PayloadSerializerOptions.Converters.Add(JsonFSharpConverter()))
