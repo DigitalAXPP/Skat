@@ -15,6 +15,7 @@ type ServerMsgDto =
     | SetParticipant of player : string
     | ShareClientMessage of msg : string
     | BidPlaced of bid : BidEventDto
+    | BidPassed
 
 let toDomainMsg serverMsg =
     match serverMsg with
@@ -40,3 +41,5 @@ let toDomainMsg serverMsg =
         Messages.ShareClientMsg msg
     | BidPlaced bid ->
         Messages.BidPlaced bid
+    | BidPassed ->
+        Messages.BidPassed

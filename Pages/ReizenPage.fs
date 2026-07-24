@@ -1,5 +1,7 @@
 module ReizenPage
 
+open System.Text.Json
+open System.Text.Json.Serialization
 open Fabulous.Avalonia
 open type Fabulous.Avalonia.View
 open Fabulous
@@ -22,6 +24,7 @@ type Msg =
     | ChangeHighestBidder of string
     | ChangeBid of string
     | SetBid of float
+    | DeclineBid
     | ChangeSeat of Seat
 
 let init =
@@ -40,7 +43,22 @@ let update msg model =
     | ChangeUserId id -> { model with UserId = id }, Cmd.none, NoIntent
     | ChangeHighestBidder id -> { model with HighestBidder = id }, Cmd.none, NoIntent
     | ChangeBid bid -> { model with Bid = Some (float bid) }, Cmd.none, NoIntent
-    | SetBid bid -> model, Cmd.none, NewGameEvent (model.RoomId, model.UserId.ToUpper(), Bid, bid)
+    | SetBid bid ->
+        let message = {
+            PlayerId = model.UserId.ToUpper()
+            Value = Some (int bid)
+            BidStep = Bid.ToString()
+        }
+        let json = JsonSerializer.Serialize(message)
+        model, Cmd.none, NewGameEvent (model.RoomId, model.UserId.ToUpper(), Bid, json)
+    | DeclineBid ->
+        let message = {
+            PlayerId = model.UserId.ToUpper()
+            Value = None
+            BidStep = Pass.ToString()
+        }
+        let json = JsonSerializer.Serialize(message)
+        model, Cmd.none, NewGameEvent ((model.RoomId), model.UserId.ToUpper(), Bid, json)
     | ChangeSeat seat -> { model with Seat = seat }, Cmd.none, NoIntent
 
 let view (hub: HubService option) model =
@@ -54,4 +72,5 @@ let view (hub: HubService option) model =
             .increment(1.0)
             .formatString("0")
             .clipValueToMinMax(true)
+        Button("Decline", DeclineBid)
     }

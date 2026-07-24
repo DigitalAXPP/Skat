@@ -1,5 +1,6 @@
 module SignalRClient
 
+open Domain
 open Microsoft.AspNetCore.SignalR.Client
 open Microsoft.AspNetCore.SignalR.Protocol
 open Microsoft.Extensions.DependencyInjection

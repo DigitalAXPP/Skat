@@ -268,16 +268,16 @@ type GameHub (
                         let! playerId = playerRepo.GetPlayerIdByUserId userId
                         let! gameId = gameRepo.GetGameIdByRoomId roomId
                         // parsing the integer string, assuming it succeeds
-                        let b = Int32.TryParse(message)
-                        let result = {
-                            PlayerId = playerId.Value.ToUpper()
-                            Value = Some (snd b)
-                            BidStep = eventType
-                        }
-                        let payload = JsonSerializer.Serialize(result)
-                        let! _ = eventRepo.NewGameEvent(gameId.Value.ToUpper(), roomId, playerId.Value.ToUpper(), eventType, payload, tx)
+                        // let b = Int32.TryParse(message)
+                        // let result = {
+                        //     PlayerId = playerId.Value.ToUpper()
+                        //     Value = Some (snd b)
+                        //     BidStep = eventType
+                        // }
+                        // let payload = JsonSerializer.Serialize(result)
+                        let! _ = eventRepo.NewGameEvent(gameId.Value.ToUpper(), roomId, playerId.Value.ToUpper(), eventType, message, tx)
                         
-                        return Ok payload
+                        return Ok message
                     with ex ->
                         return Error ex.Message
                 }
@@ -286,11 +286,16 @@ type GameHub (
             | Ok r -> 
                 tx.Commit()
                 match eventType with
-                | "Bid" | "Pass" | "ACCEPT" | "BID_WON" ->
+                | "Bid" | "ACCEPT" | "BID_WON" ->
                     let bid = JsonSerializer.Deserialize<BidEventDto>(r)
                     do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.BidPlaced(bid))
                     do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{message}.")
                 
+                | "Pass" ->
+                    let bid = JsonSerializer.Deserialize<BidEventDto>(r)
+                    do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.BidPassed)
+                    do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{message}.")
+                    
                 | "CARD_PLAYED" ->
                     let card = JsonSerializer.Deserialize<CardPlayedDto>(r)
                     do! this.Clients.Group(roomId).SendAsync("CardPlayed", card)

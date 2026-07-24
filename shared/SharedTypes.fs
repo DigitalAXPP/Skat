@@ -23,7 +23,6 @@ type EventType =
     | HandWon
 
 /// Represents a navigation intent used by the application routing logic.
-//
 /// Use values of this type to indicate which page the application should navigate to.
 type Intent =
     | StartGameRequested of string
@@ -34,7 +33,8 @@ type Intent =
     | JoinGameRoom of string
     | AllRooms
     | SendMessageToAll of string
-    | NewGameEvent of string * string * EventType * float
+    | NewGameEvent of string * string * EventType * string
+    | DeclineBidding
     | ForwardUsernameToAuth of string
     | ForwardPasswordToAuth of string
     | RegisterToAuth of string * string

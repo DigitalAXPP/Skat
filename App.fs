@@ -340,6 +340,20 @@ module App =
                         cmdNewGameEvent
                         Cmd.map ReizenMsg cmd
                     ]
+                // | DeclineBidding ->
+                //     let cmdDeclineBid =
+                //         Cmd.ofAsyncMsg (async {
+                //             try
+                //                 do! hub.NewGameEvent roomId userId (eventType.ToString()) (message.ToString()) |> Async.AwaitTask
+                //                 return EnterGameSucceeded
+                //             with exn ->
+                //                 return HubFailure exn.Message
+                //         })
+                //     { model with Reizen = updated },
+                //     Cmd.batch [
+                //         cmdDeclineBid
+                //         Cmd.map ReizenMsg cmd
+                //     ]
                 | _ -> { model with Reizen = updated }, Cmd.map ReizenMsg cmd
             | _ -> model, Cmd.none
 

@@ -21,6 +21,7 @@ type DomainMsg =
     | CardSelected of string
     | SetParticipant of player : string
     | BidPlaced of bid : BidEventDto
+    | BidPassed
     | ShareClientMsg of string
 
     | ConnectionHubFailed of string
