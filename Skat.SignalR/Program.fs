@@ -16,6 +16,8 @@ open Microsoft.Extensions.Logging
 open System.Collections.Concurrent
 open Microsoft.AspNetCore.SignalR
 open SharedTypes
+open Skat.Game.State.Bidding
+open Skat.Game.State.Domain
 open Skat.SignalR.Persistence.GameEventRepository
 open Skat.SignalR.Persistence.GameParticipantRepository
 open Skat.SignalR.Persistence.GameRepository
@@ -44,7 +46,8 @@ type GameHub (
     gameRepo: IGameRepository,
     userRepo: IUserRepository,
     participantRepo: IGameParticipantRepository,
-    eventRepo: IGameEventRepository) =
+    eventRepo: IGameEventRepository,
+    sessionStore: GameSessionStore) =
     inherit Hub()
 
     member this.AddGameRoom () =
@@ -76,6 +79,21 @@ type GameHub (
                 task {
                     try
                         let! userId = userRepo.GetUserId(user, tx)
+                        do! this.Groups.AddToGroupAsync(this.Context.ConnectionId, roomId)
+                        sessionStore.AddPlayer(roomId, userId.Value.ToUpper())
+                        
+                        match sessionStore.GetPlayer(roomId) with
+                        | Some players when List.length players = 3 ->
+                            do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{userId}/{players}.")
+                            match sessionStore.AssignSeats(players) with
+                            | Some seats ->
+                                let duel = { Bidder = seats.Forehand; Responder = seats.Middlehand; CurrentValue = 18 }
+                                sessionStore.StartSession(roomId, seats, duel) |> ignore
+                                do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{userId}/{duel}.")
+                            | None -> ()
+                        | Some players when List.length players < 3 ->
+                            do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{userId}/{players}.")
+                        | _ -> do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{userId}/ empty list in {roomId}.")
                         let! _ = playerRepo.UpdatePlayerRoom(userId.Value.ToUpper(), roomId, tx)
 
                         let! _ = repo.IncrementPlayerCount(roomId, tx)
@@ -331,6 +349,7 @@ module Program =
                 GameParticipantRepository (connectionString) :> IGameParticipantRepository)
             .AddScoped<IGameEventRepository>(fun _ ->
                 GameEventRepository (connectionString) :> IGameEventRepository)
+            .AddSingleton<GameSessionStore>()
             .AddSignalR()
             .AddJsonProtocol(fun options ->
                 options.PayloadSerializerOptions.Converters.Add(JsonFSharpConverter()))

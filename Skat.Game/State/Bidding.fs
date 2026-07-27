@@ -14,8 +14,7 @@ module Domain =
     type Decision =
         | Bid of int
         | Pass
-    let a = {Forehand = "Alex"; Middlehand = "Vercxa"; Rearhand = "Theo"}
-    let b = {Bidder = a.Forehand; Responder = a.Middlehand; CurrentValue= 18}
+
 open Domain
 
 module Bidding =
@@ -24,13 +23,21 @@ module Bidding =
         let seats = ConcurrentDictionary<string, string list>()
         
         member _.AddPlayer(roomId: string, player: PlayerId) =
-            // seats.[roomId].Append(player)
             match seats.TryAdd(roomId, [player]) with
             | true -> true
             | false ->
                 match seats.TryGetValue(roomId) with
-                | true, seat -> seats.TryUpdate(roomId, seat, List.append seat [player])
+                | true, seat -> seats.TryUpdate(roomId, List.append seat [player], seat)
                 | false, _ -> false
+        member _.GetPlayer(roomId: string) =
+            match seats.TryGetValue(roomId) with
+            | true, seat -> Some seat
+            | false, _ -> None
+        member _.AssignSeats(players : string list) =
+            match List.length players with
+            | x when x = 3 -> Some {Forehand = players.[0]; Middlehand = players.[1]; Rearhand = players.[2]}
+            | _ ->  None
+        
         member _.StartSession(roomId : string, assignment : SeatAssignment, duel : Duel) =
             let session = {RoomId = roomId; Seats = assignment; Bidding = InDuel duel}
             sessions.[roomId] <- session
@@ -43,10 +50,3 @@ module Bidding =
             
         member _.UpdateSession(roomId: string, newBid: BiddingState) =
             sessions.[roomId] <- { sessions.[roomId] with Bidding = newBid }
-
-
-open Bidding
-
-module Test =
-    let c = GameSessionStore().StartSession("abcde", a, b)
-    let d = GameSessionStore().GetSession("abcd")
