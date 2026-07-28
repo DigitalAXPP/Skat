@@ -31,14 +31,14 @@ open Transport
 open Microsoft.Data.Sqlite
 open Dapper
 
-module GameStore =
-    let games = ConcurrentDictionary<string, ResizeArray<string>>()
-
-    let addPlayer gameId playerName =
-        let players = games.GetOrAdd(gameId, fun _ -> ResizeArray())
-        if not (players.Contains playerName) then
-            players.Add playerName
-        players
+// module GameStore =
+//     let games = ConcurrentDictionary<string, ResizeArray<string>>()
+//
+//     let addPlayer gameId playerName =
+//         let players = games.GetOrAdd(gameId, fun _ -> ResizeArray())
+//         if not (players.Contains playerName) then
+//             players.Add playerName
+//         players
 
 type GameHub (
     repo: IGameRoomRepository,
@@ -89,7 +89,8 @@ type GameHub (
                             | Some seats ->
                                 let duel = { Bidder = seats.Forehand; Responder = seats.Middlehand; CurrentValue = 18 }
                                 sessionStore.StartSession(roomId, seats, duel) |> ignore
-                                do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{userId}/{duel}.")
+                                do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{seats}/{duel}.")
+                                do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.BiddingStarted (seats, duel))
                             | None -> ()
                         | Some players when List.length players < 3 ->
                             do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{userId}/{players}.")
@@ -184,15 +185,15 @@ type GameHub (
     //             do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"AGE = {err.GetType().Name}: {err}")
     //     }
     
-    member this.QuitGame (gameId: string, playerName: string) =
-        task {
-            do! this.Groups.RemoveFromGroupAsync (this.Context.ConnectionId, gameId)
-            match GameStore.games.TryGetValue gameId with
-            | true, players ->
-                players.Remove playerName |> ignore
-                do! this.Clients.Group(gameId).SendAsync("PlayersUpdate", players)
-            | _ -> ()
-        }
+    // member this.QuitGame (gameId: string, playerName: string) =
+    //     task {
+    //         do! this.Groups.RemoveFromGroupAsync (this.Context.ConnectionId, gameId)
+    //         match GameStore.games.TryGetValue gameId with
+    //         | true, players ->
+    //             players.Remove playerName |> ignore
+    //             do! this.Clients.Group(gameId).SendAsync("PlayersUpdate", players)
+    //         | _ -> ()
+    //     }
 
     // member this.SendMove (move: string, userId: string) =
     //     task {

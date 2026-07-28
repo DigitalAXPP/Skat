@@ -497,6 +497,9 @@ module App =
                     Cmd.ofMsg (ReizenMsg (ReizenPage.ChangeBid (string bid.Value.Value)))
                     Cmd.ofMsg (ReizenMsg (ReizenPage.ChangeHighestBidder bid.PlayerId))
                 ]
+            | Messages.StartBidding(seatAssignment, duel) ->
+                printfn "Received assignment: %A" seatAssignment
+                model, Cmd.ofMsg (ReizenMsg (ReizenPage.ChangeGameSession seatAssignment))
             | Messages.ShareClientMsg msg ->
                 printfn "Received shared client message: %s" msg
                 // Handle shared client message if needed

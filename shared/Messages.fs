@@ -2,6 +2,8 @@ module Messages
 
 open SharedTypes
 open Skat.Game.Domain
+open Skat.Game.State
+open Skat.Game.State.Domain
 
 type DomainMsg =
     | ConnectHub
@@ -22,6 +24,7 @@ type DomainMsg =
     | SetParticipant of player : string
     | BidPlaced of bid : BidEventDto
     | BidPassed
+    | StartBidding of seats : SeatAssignment * duel : Duel
     | ShareClientMsg of string
 
     | ConnectionHubFailed of string
