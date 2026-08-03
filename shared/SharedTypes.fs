@@ -1,5 +1,6 @@
 module SharedTypes
 
+open Skat.Game.State.Domain
 open Skat.Game.Types
 
 /// Represents the possible top-level pages/screens in the application.
@@ -35,6 +36,7 @@ type Intent =
     | SendMessageToAll of string
     | NewGameEvent of string * string * EventType * string
     | DeclineBidding
+    | SendDecision of string * string * Decision
     | ForwardUsernameToAuth of string
     | ForwardPasswordToAuth of string
     | RegisterToAuth of string * string

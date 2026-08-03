@@ -7,6 +7,7 @@ open Microsoft.Extensions.DependencyInjection
 open System.Text.Json.Serialization
 open SharedTypes
 open Messages
+open Skat.Game.State.Domain
 open Transport
 
 type HubService(
@@ -166,4 +167,14 @@ type HubService(
                     printfn "New game event: %A" eventType
                 | None ->
                     printfn "Not connected to hub."
+        }
+        
+    member _.SubmitDecision(roomId : string) (userId : string) (decision : Decision) =
+        task {
+            match hub with
+            | Some connection ->
+                do! connection.InvokeAsync("NewDecision", roomId, userId, decision)
+                printfn "New decision: %A" decision
+            | None ->
+                printfn "Not connected to hub."
         }

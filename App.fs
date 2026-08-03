@@ -340,6 +340,20 @@ module App =
                         cmdNewGameEvent
                         Cmd.map ReizenMsg cmd
                     ]
+                | SendDecision (roomId, userId, decision) ->
+                    let cmdBid =
+                        Cmd.ofAsyncMsg( async{
+                            try
+                                do! hub.SubmitDecision roomId userId decision |> Async.AwaitTask
+                                return EnterGameSucceeded
+                            with exn ->
+                                return HubFailure exn.Message
+                        })
+                    { model with Reizen = updated },
+                    Cmd.batch [
+                        cmdBid
+                        Cmd.map ReizenMsg cmd
+                    ]
                 // | DeclineBidding ->
                 //     let cmdDeclineBid =
                 //         Cmd.ofAsyncMsg (async {
@@ -453,7 +467,7 @@ module App =
                 { model with Status = InLobby }, 
                 Cmd.batch [
                     Cmd.ofMsg (LoginMsg (LoginPage.NextReizenPage))
-                    Cmd.ofMsg (ReizenMsg (ReizenPage.ChangeUserId (model.AuthenticatedUser.Value.Id.ToString())))
+                    Cmd.ofMsg (ReizenMsg (ReizenPage.ChangeUserId (model.AuthenticatedUser.Value.Id.ToString().ToUpper())))
                     Cmd.ofMsg (ReizenMsg (ReizenPage.ChangeRoomId roomId))
                 ]
             | Messages.GameLeft ->
@@ -499,7 +513,10 @@ module App =
                 ]
             | Messages.StartBidding(seatAssignment, duel) ->
                 printfn "Received assignment: %A" seatAssignment
-                model, Cmd.ofMsg (ReizenMsg (ReizenPage.ChangeGameSession seatAssignment))
+                model, Cmd.ofMsg (ReizenMsg (ReizenPage.ChangeGameSession (seatAssignment, duel)))
+            | Messages.BiddingUpdate(state) ->
+                printfn "Update assignment: %A" state
+                model, Cmd.ofMsg (ReizenMsg (ReizenPage.UpdateGameSession(state))) 
             | Messages.ShareClientMsg msg ->
                 printfn "Received shared client message: %s" msg
                 // Handle shared client message if needed

@@ -87,7 +87,7 @@ type GameHub (
                             do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{userId}/{players}.")
                             match sessionStore.AssignSeats(players) with
                             | Some seats ->
-                                let duel = { Bidder = seats.Forehand; Responder = seats.Middlehand; CurrentValue = 18 }
+                                let duel = { Bidder = seats.Forehand; Responder = seats.Middlehand; CurrentValue = Some 18.0 }
                                 sessionStore.StartSession(roomId, seats, duel) |> ignore
                                 do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{seats}/{duel}.")
                                 do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.BiddingStarted (seats, duel))
@@ -325,6 +325,16 @@ type GameHub (
             | Error err -> 
                 tx.Rollback()
                 do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"NGE = {err.GetType().Name}: {err}")
+        }
+        
+    member this.NewDecision (roomId : string, PlayerId : string, decision : Decision) =
+        task {
+            match sessionStore.GetSession(roomId) with
+            | Some session ->
+                let newBid = step session.Seats session.Bidding decision
+                sessionStore.UpdateSession(roomId, newBid)
+                do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.BidUpdate newBid)
+            | None -> ()
         }
 
 module Program =

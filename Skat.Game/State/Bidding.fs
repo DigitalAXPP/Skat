@@ -5,7 +5,7 @@ open System.Linq
 
 module Domain =
     type PlayerId = string
-    type Duel = { Bidder: string; Responder: string; CurrentValue: int }
+    type Duel = { Bidder: string; Responder: string; CurrentValue: float option }
     type BiddingState =
         | InDuel of Duel
         | Concluded of winner: string option * winningBid: int
@@ -18,6 +18,34 @@ module Domain =
 open Domain
 
 module Bidding =
+    
+    // Verifying if the bid is a valid Skat count
+    let isValid (value : int) =
+        value >= 18 && value <= 264
+        
+    let step (seats: SeatAssignment) (state: BiddingState) (decision: Decision) : BiddingState =
+        match state with
+        | Concluded _ -> state   // no transitions once concluded
+
+        | InDuel duel ->
+            match decision with
+            | Bid newValue when isValid newValue && newValue > int duel.CurrentValue.Value ->
+                // Bidder raises; duel continues at the new value
+                InDuel { duel with CurrentValue = Some (float newValue) }
+
+            | Bid _ ->
+                // invalid/non-increasing bid — ignore, state unchanged
+                state
+
+            | Pass ->
+                // Responder passed — Bidder wins this duel.
+                // If Bidder was already dueling Forehand (i.e. this was the SECOND duel), bidding concludes.
+                if duel.Bidder = seats.Forehand || duel.Responder = seats.Forehand then
+                    Concluded (Some duel.Bidder, int duel.CurrentValue.Value)
+                else
+                    // First duel just ended — winner now duels Forehand
+                    InDuel { Bidder = duel.Bidder; Responder = seats.Forehand; CurrentValue = duel.CurrentValue }
+
     type GameSessionStore() =
         let sessions = ConcurrentDictionary<string, GameSession>()
         let seats = ConcurrentDictionary<string, string list>()

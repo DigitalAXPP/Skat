@@ -25,6 +25,7 @@ type DomainMsg =
     | BidPlaced of bid : BidEventDto
     | BidPassed
     | StartBidding of seats : SeatAssignment * duel : Duel
+    | BiddingUpdate of BiddingState
     | ShareClientMsg of string
 
     | ConnectionHubFailed of string
