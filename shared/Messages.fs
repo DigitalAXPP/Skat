@@ -20,10 +20,11 @@ type DomainMsg =
     | NewGame
     | GameRoomsReceived of GameRoom list
     | NewGameEvent of roomId : string
+    | NewEvent of roomId : string * userId : string * event :EventType * message : string
     | CardSelected of string
     | SetParticipant of player : string
     | BidPlaced of bid : BidEventDto
-    | BidPassed
+    | BidPassed of roomId : string
     | StartBidding of seats : SeatAssignment * duel : Duel
     | BiddingUpdate of BiddingState
     | ShareClientMsg of string

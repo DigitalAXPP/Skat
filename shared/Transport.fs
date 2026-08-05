@@ -12,13 +12,14 @@ type ServerMsgDto =
     | NewGame
     | GetGameRoooms of rooms : GameRoom list
     | NewGameEvent of roomid : string
+    | NewEvent of roomId : string * userId : string * event : EventType * message : string
     | CardSelected of card : string
     | SetParticipant of player : string
     | ShareClientMessage of msg : string
     | BidPlaced of bid : BidEventDto
     | BiddingStarted of seats: SeatAssignment * duel: Duel
     | BidUpdate of BiddingState
-    | BidPassed
+    | BidPassed of roomId : string
 
 let toDomainMsg serverMsg =
     match serverMsg with
@@ -36,6 +37,8 @@ let toDomainMsg serverMsg =
         Messages.GameRoomsReceived rooms
     | NewGameEvent roomId ->
         Messages.NewGameEvent roomId
+    | NewEvent (roomId, userId, event, message) ->
+        Messages.NewEvent (roomId, userId, event, message)
     | CardSelected card ->
         Messages.CardSelected card
     | SetParticipant player ->
@@ -44,8 +47,8 @@ let toDomainMsg serverMsg =
         Messages.ShareClientMsg msg
     | BidPlaced bid ->
         Messages.BidPlaced bid
-    | BidPassed ->
-        Messages.BidPassed
+    | BidPassed roomId ->
+        Messages.BidPassed roomId
     | BiddingStarted (seats, duel)->
         Messages.StartBidding (seats, duel)
     | BidUpdate (state) ->

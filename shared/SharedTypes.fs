@@ -16,8 +16,8 @@ type Page =
     | PageGame
 
 type EventType =
-    | Bid
-    | Pass
+    | Tender
+    | Withdraw
     | Accept
     | CardPlayed
     | SkatPicked

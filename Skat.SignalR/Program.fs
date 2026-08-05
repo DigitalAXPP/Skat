@@ -54,7 +54,7 @@ type GameHub (
         task {
             let! result = repo.InsertRoom()
 
-            do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.NewGameRoom result)
+            do! this.Clients.Caller.SendAsync("ServerMsg", ServerMsgDto.NewGameRoom result)
             do! this.Clients.All.SendAsync("ReceiveMove", result |> string)
         }
 
@@ -305,14 +305,14 @@ type GameHub (
             | Ok r -> 
                 tx.Commit()
                 match eventType with
-                | "Bid" | "ACCEPT" | "BID_WON" ->
+                | "Tender" | "ACCEPT" | "BID_WON" ->
                     let bid = JsonSerializer.Deserialize<BidEventDto>(r)
                     do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.BidPlaced(bid))
                     do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{message}.")
                 
-                | "Pass" ->
+                | "Withdraw" ->
                     let bid = JsonSerializer.Deserialize<BidEventDto>(r)
-                    do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.BidPassed)
+                    do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.BidPassed(roomId))
                     do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{message}.")
                     
                 | "CARD_PLAYED" ->
@@ -332,8 +332,12 @@ type GameHub (
             match sessionStore.GetSession(roomId) with
             | Some session ->
                 let newBid = step session.Seats session.Bidding decision
+                let json =  match newBid with
+                            | InDuel d -> JsonSerializer.Serialize(d) 
+                            | Concluded (w,b) -> $"{w.Value.ToString()}={b.ToString()}= "
                 sessionStore.UpdateSession(roomId, newBid)
                 do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.BidUpdate newBid)
+                do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.NewEvent (roomId, PlayerId, Tender, json))
             | None -> ()
         }
 

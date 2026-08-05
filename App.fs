@@ -5,9 +5,11 @@ open Fabulous
 open Fabulous.Avalonia
 
 open type Fabulous.Avalonia.View
+open Microsoft.AspNetCore.SignalR
 open SharedTypes
 open SignalRClient
 open Domain
+open Skat.Game.State.Domain
 
 module App =
 
@@ -459,7 +461,7 @@ module App =
 
         | JoinGameConfirmed ->
             { model with Status = InLobby }, Cmd.none
-
+                
         | DomainMsg domainMsg ->
             match domainMsg with
             | Messages.GameJoined roomId ->
@@ -511,12 +513,38 @@ module App =
                     Cmd.ofMsg (ReizenMsg (ReizenPage.ChangeBid (string bid.Value.Value)))
                     Cmd.ofMsg (ReizenMsg (ReizenPage.ChangeHighestBidder bid.PlayerId))
                 ]
+            | Messages.BidPassed roomId ->
+                printfn "Bid passed:"
+                match model.HubService with
+                | Some hub ->
+                    let! cmdPass =
+                        Cmd.ofAsyncMsg(async {
+                            try
+                                let! dec = hub.SubmitDecision roomId "userId" Decision.Pass |> Async.AwaitTask
+                                return EnterGameSucceeded
+                            with exn ->
+                                return HubFailure exn.Message
+                        })
+                    model, cmdPass
+                | None -> model, Cmd.none
             | Messages.StartBidding(seatAssignment, duel) ->
                 printfn "Received assignment: %A" seatAssignment
                 model, Cmd.ofMsg (ReizenMsg (ReizenPage.ChangeGameSession (seatAssignment, duel)))
             | Messages.BiddingUpdate(state) ->
                 printfn "Update assignment: %A" state
-                model, Cmd.ofMsg (ReizenMsg (ReizenPage.UpdateGameSession(state))) 
+                model, Cmd.ofMsg (ReizenMsg (ReizenPage.UpdateGameSession(state)))
+            | Messages.NewEvent(roomId, userId, eventType, message) ->
+                match model.HubService with
+                | Some hub ->
+                    let cmdNewEvent =
+                        Cmd.ofAsyncMsg (async {
+                            try
+                                do! hub.NewGameEvent roomId userId (eventType.ToString()) (message.ToString()) |> Async.AwaitTask
+                                return EnterGameSucceeded
+                            with exn ->
+                                return HubFailure exn.Message
+                        })
+                    model, cmdNewEvent
             | Messages.ShareClientMsg msg ->
                 printfn "Received shared client message: %s" msg
                 // Handle shared client message if needed

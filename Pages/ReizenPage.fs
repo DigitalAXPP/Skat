@@ -66,15 +66,15 @@ let update msg model =
     | ChangeUserId id -> { model with Me = id }, Cmd.none, NoIntent
     | ChangeHighestBidder id -> { model with HighestBidder = id }, Cmd.none, NoIntent
     | ChangeBid bid -> { model with Bid = Some (float bid) }, Cmd.none, NoIntent
-    | RequestBid bid -> model, Cmd.none, SendDecision (model.RoomId, model.PlayerId, Bid bid)
+    | RequestBid bid -> model, Cmd.none, SendDecision (model.RoomId, model.Me.ToUpper(), Bid bid)
     | SetBid bid ->
         let message = {
             PlayerId = model.Me.ToUpper()
             Value = Some (int bid)
-            BidStep = Bid.ToString()
+            BidStep = Tender.ToString()
         }
         let json = JsonSerializer.Serialize(message)
-        model, Cmd.none, NewGameEvent (model.RoomId, model.Me.ToUpper(), EventType.Bid, json)
+        model, Cmd.none, NewGameEvent (model.RoomId, model.Me.ToUpper(), Tender, json)
     | DeclineBid ->
         let message = {
             PlayerId = model.Me.ToUpper()
@@ -82,7 +82,7 @@ let update msg model =
             BidStep = Pass.ToString()
         }
         let json = JsonSerializer.Serialize(message)
-        model, Cmd.none, NewGameEvent ((model.RoomId), model.Me.ToUpper(), EventType.Bid, json)
+        model, Cmd.none, NewGameEvent (model.RoomId, model.Me.ToUpper(), Withdraw, json)
     | ChangeGameSession (seat, duel) -> { model with Seats = Some seat ; Bidding = Some (InDuel duel)}, Cmd.none, NoIntent
     | UpdateGameSession state -> { model with Bidding = Some state }, Cmd.none, NoIntent
 
