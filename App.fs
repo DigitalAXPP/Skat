@@ -39,7 +39,7 @@ module App =
             AuthModel: Domain.Model
             Home: HomePage.Model
             Login: LoginPage.Model
-            Reizen: ReizenPage.Model
+            Reizen: ReizenPage.Model option
             Game: GamePage.Model
             HubService: HubService option
         }
@@ -79,7 +79,7 @@ module App =
 
         let loginModel, loginCmd = LoginPage.init ()
         let homeModel, homeCmd = HomePage.init
-        let reizenModel, reizenCmd = ReizenPage.init
+        // let reizenModel, reizenCmd = ReizenPage.init ()
         let gameModel, gameCmd = GamePage.init
         let authModel = Domain.init
         {
@@ -92,7 +92,7 @@ module App =
             AuthModel = authModel
             Home = homeModel
             Login = loginModel
-            Reizen = reizenModel
+            Reizen = None
             Game = gameModel
             HubService = None
         }, 
@@ -101,7 +101,7 @@ module App =
                 Cmd.map LoginMsg loginCmd
                 Cmd.map HomeMsg homeCmd
                 Cmd.map GameMsg gameCmd
-                Cmd.map ReizenMsg reizenCmd
+                // Cmd.map ReizenMsg reizenCmd
             ]
 
     let navigateToPage model page authState =
@@ -324,53 +324,55 @@ module App =
                     model, Cmd.none
 
         | ReizenMsg m ->
-            match model.HubService with
-            | Some hub ->
-                let updated, cmd, intention = ReizenPage.update m model.Reizen
-                match intention with
-                | Intent.NewGameEvent (roomId, userId, eventType, message) ->
-                    let cmdNewGameEvent =
-                        Cmd.ofAsyncMsg (async {
-                            try
-                                do! hub.NewGameEvent roomId userId (eventType.ToString()) (message.ToString()) |> Async.AwaitTask
-                                return EnterGameSucceeded
-                            with exn ->
-                                return HubFailure exn.Message
-                        })
-                    { model with Reizen = updated },
-                    Cmd.batch [
-                        cmdNewGameEvent
-                        Cmd.map ReizenMsg cmd
-                    ]
-                | SendDecision (roomId, userId, decision) ->
-                    let cmdBid =
-                        Cmd.ofAsyncMsg( async{
-                            try
-                                do! hub.SubmitDecision roomId userId decision |> Async.AwaitTask
-                                return EnterGameSucceeded
-                            with exn ->
-                                return HubFailure exn.Message
-                        })
-                    { model with Reizen = updated },
-                    Cmd.batch [
-                        cmdBid
-                        Cmd.map ReizenMsg cmd
-                    ]
-                // | DeclineBidding ->
-                //     let cmdDeclineBid =
-                //         Cmd.ofAsyncMsg (async {
-                //             try
-                //                 do! hub.NewGameEvent roomId userId (eventType.ToString()) (message.ToString()) |> Async.AwaitTask
-                //                 return EnterGameSucceeded
-                //             with exn ->
-                //                 return HubFailure exn.Message
-                //         })
-                //     { model with Reizen = updated },
-                //     Cmd.batch [
-                //         cmdDeclineBid
-                //         Cmd.map ReizenMsg cmd
-                //     ]
-                | _ -> { model with Reizen = updated }, Cmd.map ReizenMsg cmd
+            match model.Reizen with
+            | Some rpage ->
+                match model.HubService with
+                | Some hub ->
+                    let updated, cmd, intention = ReizenPage.update m rpage
+                    match intention with
+                    | Intent.NewGameEvent (roomId, userId, eventType, message) ->
+                        let cmdNewGameEvent =
+                            Cmd.ofAsyncMsg (async {
+                                try
+                                    do! hub.NewGameEvent roomId userId (eventType.ToString()) (message.ToString()) |> Async.AwaitTask
+                                    return EnterGameSucceeded
+                                with exn ->
+                                    return HubFailure exn.Message
+                            })
+                        { model with Reizen = Some updated },
+                        Cmd.batch [
+                            cmdNewGameEvent
+                            Cmd.map ReizenMsg cmd
+                        ]
+                    | SendDecision (roomId, userId, decision) ->
+                        let cmdBid =
+                            Cmd.ofAsyncMsg( async{
+                                try
+                                    do! hub.SubmitDecision roomId userId decision |> Async.AwaitTask
+                                    return EnterGameSucceeded
+                                with exn ->
+                                    return HubFailure exn.Message
+                            })
+                        { model with Reizen = Some updated },
+                        Cmd.batch [
+                            cmdBid
+                            Cmd.map ReizenMsg cmd
+                        ]
+                    // | DeclineBidding ->
+                    //     let cmdDeclineBid =
+                    //         Cmd.ofAsyncMsg (async {
+                    //             try
+                    //                 do! hub.NewGameEvent roomId userId (eventType.ToString()) (message.ToString()) |> Async.AwaitTask
+                    //                 return EnterGameSucceeded
+                    //             with exn ->
+                    //                 return HubFailure exn.Message
+                    //         })
+                    //     { model with Reizen = updated },
+                    //     Cmd.batch [
+                    //         cmdDeclineBid
+                    //         Cmd.map ReizenMsg cmd
+                    //     ]
+                    | _ -> { model with Reizen = Some updated }, Cmd.map ReizenMsg cmd
             | _ -> model, Cmd.none
 
         | GameMsg m ->
@@ -527,9 +529,15 @@ module App =
                         })
                     model, cmdPass
                 | None -> model, Cmd.none
-            | Messages.StartBidding(seatAssignment, duel) ->
+            | Messages.StartBidding(seatAssignment, duel, roomId) ->
                 printfn "Received assignment: %A" seatAssignment
-                model, Cmd.ofMsg (ReizenMsg (ReizenPage.ChangeGameSession (seatAssignment, duel)))
+                match model.AuthenticatedUser with
+                | Some user ->
+                    let reizenModel, cmd = ReizenPage.init (user.Id.ToString()) seatAssignment duel
+                    { model with Reizen = Some reizenModel; CurrentPage = PageReizen},
+                    Cmd.ofMsg (ReizenMsg (ReizenPage.ChangeRoomId roomId))
+                    // Cmd.ofMsg (ReizenMsg (ReizenPage.ChangeGameSession (seatAssignment, duel)))
+                | None -> model, Cmd.none
             | Messages.BiddingUpdate(state) ->
                 printfn "Update assignment: %A" state
                 model, Cmd.ofMsg (ReizenMsg (ReizenPage.UpdateGameSession(state)))
@@ -615,7 +623,10 @@ module App =
                 match model.CurrentPage with
                 | PageHome -> View.map HomeMsg (HomePage.view model.Home)
                 | PageLogin -> View.map LoginMsg (LoginPage.view model.HubService model.Login)
-                | PageReizen -> View.map ReizenMsg (ReizenPage.view model.HubService model.Reizen)
+                | PageReizen ->
+                    match model.Reizen with
+                    | Some m -> View.map ReizenMsg (ReizenPage.view model.HubService m)
+                    | None -> View.map LoginMsg (LoginPage.view model.HubService model.Login)
                 | PageGame -> View.map GameMsg (GamePage.view model.HubService model.Game)
             )
         )

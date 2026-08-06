@@ -17,7 +17,7 @@ type ServerMsgDto =
     | SetParticipant of player : string
     | ShareClientMessage of msg : string
     | BidPlaced of bid : BidEventDto
-    | BiddingStarted of seats: SeatAssignment * duel: Duel
+    | BiddingStarted of seats: SeatAssignment * duel: Duel * roomId : string
     | BidUpdate of BiddingState
     | BidPassed of roomId : string
 
@@ -49,7 +49,7 @@ let toDomainMsg serverMsg =
         Messages.BidPlaced bid
     | BidPassed roomId ->
         Messages.BidPassed roomId
-    | BiddingStarted (seats, duel)->
-        Messages.StartBidding (seats, duel)
+    | BiddingStarted (seats, duel, roomId)->
+        Messages.StartBidding (seats, duel, roomId)
     | BidUpdate (state) ->
         Messages.BiddingUpdate (state)

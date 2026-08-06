@@ -25,7 +25,7 @@ type DomainMsg =
     | SetParticipant of player : string
     | BidPlaced of bid : BidEventDto
     | BidPassed of roomId : string
-    | StartBidding of seats : SeatAssignment * duel : Duel
+    | StartBidding of seats : SeatAssignment * duel : Duel * roomId : string
     | BiddingUpdate of BiddingState
     | ShareClientMsg of string
 

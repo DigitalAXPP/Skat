@@ -90,7 +90,7 @@ type GameHub (
                                 let duel = { Bidder = seats.Forehand; Responder = seats.Middlehand; CurrentValue = Some 18.0 }
                                 sessionStore.StartSession(roomId, seats, duel) |> ignore
                                 do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{seats}/{duel}.")
-                                do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.BiddingStarted (seats, duel))
+                                do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.BiddingStarted (seats, duel, roomId))
                             | None -> ()
                         | Some players when List.length players < 3 ->
                             do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{userId}/{players}.")
@@ -107,8 +107,8 @@ type GameHub (
             | Ok r -> 
                 tx.Commit()
                 do! this.Groups.AddToGroupAsync (this.Context.ConnectionId, roomId)
-                do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.JoinGame roomId)
-                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{user}/{r} joined room {roomId}.")
+                // do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.JoinGame roomId)
+                do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{user}/{r} joined room {roomId}.")
             | Error err -> 
                 tx.Rollback()
                 do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"JR = {err.GetType().Name}: {err}")
@@ -337,7 +337,7 @@ type GameHub (
                             | Concluded (w,b) -> $"{w.Value.ToString()}={b.ToString()}= "
                 sessionStore.UpdateSession(roomId, newBid)
                 do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.BidUpdate newBid)
-                do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.NewEvent (roomId, PlayerId, Tender, json))
+                do! this.Clients.Caller.SendAsync("ServerMsg", ServerMsgDto.NewEvent (roomId, PlayerId, Tender, json))
             | None -> ()
         }
 
