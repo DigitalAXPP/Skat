@@ -11,7 +11,7 @@ module GameRoom =
     type IGameRoomRepository =
         abstract member GetRoom : RoomId: string -> Task<GameRoom option>
         abstract member GetAllRooms : unit -> Task<GameRoom list>
-        abstract member InsertRoom : unit -> Task<string>
+        abstract member InsertRoom : ?tx : IDbTransaction -> Task<string>
         abstract member IncrementPlayerCount : RoomId : string * ?tx : IDbTransaction -> Task<int>
 
     type GameRoomRepository (connectionstring: string) =
@@ -39,14 +39,16 @@ module GameRoom =
                 return result |> Seq.toList
             }
             
-            member _.InsertRoom () = task {
-                use conn = new SqliteConnection(connectionstring)
+            member _.InsertRoom (tx : IDbTransaction option) = task {
+                // use conn = new SqliteConnection(connectionstring)
                 let roomId = System.Guid.NewGuid().ToString().ToUpper()
-                let! result = conn.ExecuteScalarAsync<int>(
-                        "INSERT INTO GameRoom (RoomId, MaxPlayer, CurrentPlayer) VALUES (@roomId, @maxPlayer, @currentPlayer)",
-                        {| roomId = roomId; maxPlayer = 4; currentPlayer = 0 |}
-                    )
-                return roomId
+                match tx with
+                | Some t -> 
+                    let! result = t.Connection.ExecuteScalarAsync<int>(
+                            "INSERT INTO GameRoom (RoomId, MaxPlayer, CurrentPlayer) VALUES (@roomId, @maxPlayer, @currentPlayer)",
+                            {| roomId = roomId; maxPlayer = 4; currentPlayer = 0 |},
+                            transaction = t)
+                    return roomId
             }
             
             member _.IncrementPlayerCount(RoomId: string, tx: IDbTransaction option) = task {

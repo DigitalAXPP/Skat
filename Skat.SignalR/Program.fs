@@ -52,10 +52,32 @@ type GameHub (
 
     member this.AddGameRoom () =
         task {
-            let! result = repo.InsertRoom()
+            let dbPath = Path.Combine("/home/mint/Documents/github/Skat/Skat.SignalR", "game.db")
+            let connectionString = $"Data Source={dbPath}"
+            use conn = new SqliteConnection(connectionString)
 
-            do! this.Clients.Caller.SendAsync("ServerMsg", ServerMsgDto.NewGameRoom result)
-            do! this.Clients.All.SendAsync("ReceiveMove", result |> string)
+            do! conn.OpenAsync()
+            use tx = conn.BeginTransaction()
+            let! result =
+                task {
+                    try 
+                        let! roomId = repo.InsertRoom(tx)
+                        
+                        let gameId = System.Guid.NewGuid().ToString().ToUpper()
+                        let! _ = gameRepo.InsertGame(gameId, roomId, tx)
+                        return Ok roomId
+                    with exn ->
+                        return Error exn
+                }
+            match result with
+            | Ok r ->
+                tx.Commit()
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"Room {r} created.")
+            | Error err ->
+                tx.Rollback()
+                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"JR = {err.GetType().Name}: {err}")
+            // do! this.Clients.Caller.SendAsync("ServerMsg", ServerMsgDto.NewGameRoom result)
+            
         }
 
     member this.GetGameRooms () =
@@ -114,34 +136,34 @@ type GameHub (
                 do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"JR = {err.GetType().Name}: {err}")
         }
 
-    member this.CreateGame (roomId: string) =
-        task {
-            let dbPath = Path.Combine("/home/mint/Documents/github/Skat/Skat.SignalR", "game.db")
-            let connectionString = $"Data Source={dbPath}"
-            use conn = new SqliteConnection(connectionString)
-
-            do! conn.OpenAsync()
-            use tx = conn.BeginTransaction()
-
-            let! result =
-                task {
-                    try
-                        let gameId = System.Guid.NewGuid().ToString().ToUpper()
-                        let! game = gameRepo.InsertGame(gameId, roomId, tx)
-
-                        return Ok game
-                    with ex ->
-                        return Error ex.Message
-                }
-
-            match result with
-            | Ok r -> 
-                tx.Commit()
-                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.NewGame)
-            | Error err -> 
-                tx.Rollback()
-                do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{err.GetType().Name}: {err}")
-        }
+    // member this.CreateGame (roomId: string) =
+    //     task {
+    //         let dbPath = Path.Combine("/home/mint/Documents/github/Skat/Skat.SignalR", "game.db")
+    //         let connectionString = $"Data Source={dbPath}"
+    //         use conn = new SqliteConnection(connectionString)
+    //
+    //         do! conn.OpenAsync()
+    //         use tx = conn.BeginTransaction()
+    //
+    //         let! result =
+    //             task {
+    //                 try
+    //                     let gameId = System.Guid.NewGuid().ToString().ToUpper()
+    //                     let! game = gameRepo.InsertGame(gameId, roomId, tx)
+    //
+    //                     return Ok game
+    //                 with ex ->
+    //                     return Error ex.Message
+    //             }
+    //
+    //         match result with
+    //         | Ok r -> 
+    //             tx.Commit()
+    //             do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.NewGame)
+    //         | Error err -> 
+    //             tx.Rollback()
+    //             do! this.Clients.All.SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{err.GetType().Name}: {err}")
+    //     }
     
     // member this.AddGameEvent (roomId: string) (userId: string) (event: string)  =
     //     task {
