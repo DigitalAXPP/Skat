@@ -8,8 +8,8 @@ type ServerMsgDto =
     | JoinGame of roomId : string
     | MoveReceiving of move : string
     | QuitGame
-    | NewGameRoom of roomid : string
-    | NewGame
+    // | NewGameRoom of roomid : string
+    // | NewGame
     | GetGameRoooms of rooms : GameRoom list
     | NewGameEvent of roomid : string
     | NewEvent of roomId : string * userId : string * event : EventType * message : string
@@ -29,10 +29,10 @@ let toDomainMsg serverMsg =
         Messages.GameLeft
     | MoveReceiving move ->
         Messages.MoveReceived move
-    | NewGameRoom id ->
-        Messages.GameRoomAdded id
-    | NewGame ->
-        Messages.NewGame
+    // | NewGameRoom id ->
+    //     Messages.GameRoomAdded id
+    // | NewGame ->
+    //     Messages.NewGame
     | GetGameRoooms rooms ->
         Messages.GameRoomsReceived rooms
     | NewGameEvent roomId ->

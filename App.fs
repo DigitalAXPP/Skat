@@ -484,10 +484,10 @@ module App =
                 // Handle new game room added if needed
                 //model, Cmd.ofMsg (NewGameEvent (id, "New game room added"))
                 model, Cmd.ofMsg (NewGame id)
-            | Messages.NewGame ->
-                printfn "New game entry added."
-                // Handle new game notification if needed
-                model, Cmd.none
+            // | Messages.NewGame ->
+            //     printfn "New game entry added."
+            //     // Handle new game notification if needed
+            //     model, Cmd.none
 
             | Messages.GameRoomsReceived rooms ->
                 printfn "Received game rooms: %A" rooms
@@ -583,20 +583,20 @@ module App =
             | None, _ ->
                 model, Cmd.none
 
-        | NewGame roomId ->
-            match model.HubService with
-            | Some hub ->
-                let cmdNewGame =
-                    Cmd.ofAsyncMsg (async {
-                        try
-                            do! hub.CreateGame roomId |> Async.AwaitTask
-                            return EnterGameSucceeded
-                        with exn ->
-                            return HubFailure exn.Message
-                    })
-                model, cmdNewGame
-            | None ->
-                model, Cmd.none
+        // | NewGame roomId ->
+        //     match model.HubService with
+        //     | Some hub ->
+        //         let cmdNewGame =
+        //             Cmd.ofAsyncMsg (async {
+        //                 try
+        //                     do! hub.CreateGame roomId |> Async.AwaitTask
+        //                     return EnterGameSucceeded
+        //                 with exn ->
+        //                     return HubFailure exn.Message
+        //             })
+        //         model, cmdNewGame
+        //     | None ->
+        //         model, Cmd.none
 
         | NewParticipant (user, roomId) ->
             match model.HubService with

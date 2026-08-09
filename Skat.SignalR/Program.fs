@@ -356,7 +356,7 @@ type GameHub (
                 let newBid = step session.Seats session.Bidding decision
                 let json =  match newBid with
                             | InDuel d -> JsonSerializer.Serialize(d) 
-                            | Concluded (w,b) -> $"{w.Value.ToString()}={b.ToString()}= "
+                            | Concluded (w,b) -> $"{w.Value}={b}"
                 sessionStore.UpdateSession(roomId, newBid)
                 do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.BidUpdate newBid)
                 do! this.Clients.Caller.SendAsync("ServerMsg", ServerMsgDto.NewEvent (roomId, PlayerId, Tender, json))
