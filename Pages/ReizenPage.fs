@@ -12,7 +12,6 @@ open Skat.Game.State.Domain
 type Role =
     | ActiveBidder
     | ActiveResponder
-    | WaitingDuel
     | Waiting
 
 type Model = 
@@ -45,7 +44,7 @@ let getRole (model : Model) : Role =
         ActiveBidder
     | InDuel duel when duel.Responder.ToUpper() = model.Me.ToUpper() ->
         ActiveResponder
-    | InDuel _ -> WaitingDuel
+    | InDuel _ -> Waiting
     | Concluded _ -> Waiting
 
 let init(me : string) (seats : SeatAssignment) (duel : Duel) =
@@ -111,8 +110,6 @@ let view (hub: HubService option) model =
             | ActiveResponder ->
                 TextBlock($"{duel.Bidder} bids {duel.CurrentValue}. Accept or pass?")
                 TextBlock($"Bid: {duel.CurrentValue}")
-            | WaitingDuel ->
-                TextBlock("You are in between.")
             | Waiting ->
                 TextBlock($"Waiting: {duel.Bidder} vs {duel.Responder} are bidding ({duel.CurrentValue})")
         | Concluded (Some winner, value) -> TextBlock($"{winner} won the bid at {value}")

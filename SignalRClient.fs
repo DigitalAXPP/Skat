@@ -32,9 +32,6 @@ type HubService(
                                 options.PayloadSerializerOptions.Converters.Add(JsonFSharpConverter()))
                             .Build()
 
-                    // connection.On<string>("ReceiveMove", fun move ->
-                    //     printf "New move: %s" move) |> ignore
-
                     connection.On<ServerMsgDto>(HubMethods.ServerMsg, fun (dto: ServerMsgDto) ->
                         let domainMsg = Transport.toDomainMsg dto
                         dispatch domainMsg

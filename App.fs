@@ -358,20 +358,6 @@ module App =
                             cmdBid
                             Cmd.map ReizenMsg cmd
                         ]
-                    // | DeclineBidding ->
-                    //     let cmdDeclineBid =
-                    //         Cmd.ofAsyncMsg (async {
-                    //             try
-                    //                 do! hub.NewGameEvent roomId userId (eventType.ToString()) (message.ToString()) |> Async.AwaitTask
-                    //                 return EnterGameSucceeded
-                    //             with exn ->
-                    //                 return HubFailure exn.Message
-                    //         })
-                    //     { model with Reizen = updated },
-                    //     Cmd.batch [
-                    //         cmdDeclineBid
-                    //         Cmd.map ReizenMsg cmd
-                    //     ]
                     | _ -> { model with Reizen = Some updated }, Cmd.map ReizenMsg cmd
             | _ -> model, Cmd.none
 
@@ -484,10 +470,6 @@ module App =
                 // Handle new game room added if needed
                 //model, Cmd.ofMsg (NewGameEvent (id, "New game room added"))
                 model, Cmd.ofMsg (NewGame id)
-            // | Messages.NewGame ->
-            //     printfn "New game entry added."
-            //     // Handle new game notification if needed
-            //     model, Cmd.none
 
             | Messages.GameRoomsReceived rooms ->
                 printfn "Received game rooms: %A" rooms
@@ -582,21 +564,6 @@ module App =
                 model, cmdNewGameEvent
             | None, _ ->
                 model, Cmd.none
-
-        // | NewGame roomId ->
-        //     match model.HubService with
-        //     | Some hub ->
-        //         let cmdNewGame =
-        //             Cmd.ofAsyncMsg (async {
-        //                 try
-        //                     do! hub.CreateGame roomId |> Async.AwaitTask
-        //                     return EnterGameSucceeded
-        //                 with exn ->
-        //                     return HubFailure exn.Message
-        //             })
-        //         model, cmdNewGame
-        //     | None ->
-        //         model, Cmd.none
 
         | NewParticipant (user, roomId) ->
             match model.HubService with
