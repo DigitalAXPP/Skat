@@ -5,6 +5,7 @@ open System.Collections.Generic
 open System.IO
 open System.Linq
 open System.Threading.Tasks
+open JsonConversion
 open Microsoft.AspNetCore
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
@@ -99,10 +100,10 @@ type GameHub (
                             do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{userId}/{players}.")
                             match sessionStore.AssignSeats(players) with
                             | Some seats ->
-                                let duel = { Bidder = seats.Forehand; Responder = seats.Middlehand; CurrentValue = Some 18.0 }
+                                let duel = { Bidder = seats.Middlehand; Responder = seats.Forehand; CurrentValue = Some 18.0 }
                                 sessionStore.StartSession(roomId, seats, duel) |> ignore
                                 do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{seats}/{duel}.")
-                                do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.BiddingStarted (seats, duel, roomId))
+                                do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.BiddingStarted (seats, InDuel (duel, MiddlehandVSForehand), roomId))
                             | None -> ()
                         | Some players when List.length players < 3 ->
                             do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{userId}/{players}.")
@@ -216,13 +217,17 @@ type GameHub (
         task {
             match sessionStore.GetSession(roomId) with
             | Some session ->
-                let newBid = step session.Seats session.Bidding decision
-                let json =  match newBid with
-                            | InDuel d -> JsonSerializer.Serialize(d) 
-                            | Concluded (w,b) -> $"{w.Value}={b}"
-                sessionStore.UpdateSession(roomId, newBid)
-                do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.BidUpdate newBid)
-                do! this.Clients.Caller.SendAsync("ServerMsg", ServerMsgDto.NewEvent (roomId, PlayerId, Tender, json))
+                try
+                    let newBid = step session.Seats session.Bidding decision PlayerId
+                    let json =  match newBid with
+                                | InDuel (d,p) -> JsonSerializer.Serialize({| Duel = d; Phase = p |})
+                                | Concluded (w,b) -> JsonSerializer.Serialize({| Winner = w; WinningBid = b |})
+                    sessionStore.UpdateSession(roomId, newBid)
+                    do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{json}")
+                    do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.BidUpdate newBid)
+                    do! this.Clients.Caller.SendAsync("ServerMsg", ServerMsgDto.NewEvent (roomId, PlayerId, Tender, json))
+                with exn ->
+                    do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{exn}")
             | None -> ()
         }
 
@@ -252,8 +257,11 @@ module Program =
             .AddSingleton<GameSessionStore>()
             .AddSignalR()
             .AddJsonProtocol(fun options ->
-                options.PayloadSerializerOptions.Converters.Add(JsonFSharpConverter()))
-                |> ignore
+                options.PayloadSerializerOptions.Converters.Add(PhaseConverter())
+                options.PayloadSerializerOptions.Converters.Add(PositionConverter())
+                options.PayloadSerializerOptions.Converters.Add(JsonFSharpConverter())
+                )
+                // |> ignore
 
         let app = builder.Build()
 

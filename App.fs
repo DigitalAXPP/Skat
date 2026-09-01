@@ -511,11 +511,11 @@ module App =
                         })
                     model, cmdPass
                 | None -> model, Cmd.none
-            | Messages.StartBidding(seatAssignment, duel, roomId) ->
+            | Messages.StartBidding(seatAssignment, state, roomId) ->
                 printfn "Received assignment: %A" seatAssignment
                 match model.AuthenticatedUser with
                 | Some user ->
-                    let reizenModel, cmd = ReizenPage.init (user.Id.ToString()) seatAssignment duel
+                    let reizenModel, cmd = ReizenPage.init (user.Id.ToString()) seatAssignment state
                     { model with Reizen = Some reizenModel; CurrentPage = PageReizen},
                     Cmd.ofMsg (ReizenMsg (ReizenPage.ChangeRoomId roomId))
                     // Cmd.ofMsg (ReizenMsg (ReizenPage.ChangeGameSession (seatAssignment, duel)))

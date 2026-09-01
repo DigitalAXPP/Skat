@@ -35,19 +35,19 @@ type Msg =
     | SetBid of float
     | DeclineBid
     | RequestBid of int
-    | ChangeGameSession of SeatAssignment * Duel
+    | ChangeGameSession of SeatAssignment * Duel * phase
     | UpdateGameSession of BiddingState
 
 let getRole (model : Model) : Role =
     match model.Bidding with
-    | InDuel duel when duel.Bidder.ToUpper() = model.Me.ToUpper() ->
+    | InDuel (duel, p) when duel.Bidder.ToUpper() = model.Me.ToUpper() ->
         ActiveBidder
-    | InDuel duel when duel.Responder.ToUpper() = model.Me.ToUpper() ->
+    | InDuel (duel, p) when duel.Responder.ToUpper() = model.Me.ToUpper() ->
         ActiveResponder
     | InDuel _ -> Waiting
     | Concluded _ -> Waiting
 
-let init(me : string) (seats : SeatAssignment) (duel : Duel) =
+let init(me : string) (seats : SeatAssignment) (state : BiddingState) =
     { 
         RoomId = ""
         Me = me
@@ -55,7 +55,7 @@ let init(me : string) (seats : SeatAssignment) (duel : Duel) =
         Seat = Dealer
         HighestBidder = ""
         Bid = None
-        Bidding = InDuel duel
+        Bidding = state
         Seats = seats
         Duel = None
     }, Cmd.none
@@ -83,7 +83,7 @@ let update msg model =
         }
         let json = JsonSerializer.Serialize(message)
         model, Cmd.none, NewGameEvent (model.RoomId, model.Me.ToUpper(), Withdraw, json)
-    | ChangeGameSession (seat, duel) -> { model with Seats = seat ; Bidding = InDuel duel}, Cmd.none, NoIntent
+    | ChangeGameSession (seat, duel, p) -> { model with Seats = seat ; Bidding = InDuel (duel, p)}, Cmd.none, NoIntent
     | UpdateGameSession state -> { model with Bidding = state }, Cmd.none, NoIntent
 
 let view (hub: HubService option) model =
@@ -102,7 +102,7 @@ let view (hub: HubService option) model =
             TextBlock($"Bid: {d.CurrentValue}")
         | None -> ()
         match model.Bidding with
-        | InDuel duel ->
+        | InDuel (duel, p) ->
             match getRole model with
             | ActiveBidder ->
                 TextBlock($"You are bidding against {duel.Responder}.")

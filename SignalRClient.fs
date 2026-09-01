@@ -5,6 +5,7 @@ open Microsoft.AspNetCore.SignalR.Client
 open Microsoft.AspNetCore.SignalR.Protocol
 open Microsoft.Extensions.DependencyInjection
 open System.Text.Json.Serialization
+open JsonConversion
 open SharedTypes
 open Messages
 open Skat.Game.State.Domain
@@ -29,6 +30,8 @@ type HubService(
                             .WithUrl(hubUrl)
                             .WithAutomaticReconnect()
                             .AddJsonProtocol(fun options ->
+                                options.PayloadSerializerOptions.Converters.Add(PhaseConverter())
+                                options.PayloadSerializerOptions.Converters.Add(PositionConverter())
                                 options.PayloadSerializerOptions.Converters.Add(JsonFSharpConverter()))
                             .Build()
 
