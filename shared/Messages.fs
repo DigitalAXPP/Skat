@@ -3,6 +3,7 @@ module Messages
 open SharedTypes
 open Skat.Game.Domain
 open Skat.Game.State
+open Skat.Game.State.Bidding
 open Skat.Game.State.Domain
 
 type DomainMsg =
@@ -25,7 +26,7 @@ type DomainMsg =
     | SetParticipant of player : string
     | BidPlaced of bid : BidEventDto
     | BidPassed of roomId : string
-    | StartBidding of seats : SeatAssignment * state : BiddingState * roomId : string
+    | StartBidding of seats : SeatAssignment * state : BiddingState * roomId : string * cardState : DealState
     | BiddingUpdate of BiddingState
     | ShareClientMsg of string
 

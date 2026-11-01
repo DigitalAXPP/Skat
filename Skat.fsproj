@@ -12,11 +12,11 @@
   
   <ItemGroup>
 <!--    <Folder Include="Resources/Images/" />-->
-    <Compile Include="shared\JsonConversion.fs" />
     <Compile Include="shared\HubMethods.fs" />
       <Compile Include="shared\SharedTypes.fs" />
       <Compile Include="shared\Messages.fs" />
       <Compile Include="shared\Transport.fs" />
+      <Compile Include="shared\JsonConversion.fs" />
       <Compile Include="SignalRClient.fs" />
       <Compile Include="Pages\GamePage.fs" />
       <Compile Include="Pages\LoginPage.fs" />

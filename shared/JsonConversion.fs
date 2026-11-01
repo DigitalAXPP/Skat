@@ -3,6 +3,7 @@ module JsonConversion
 open System.Text.Json
 open System.Text.Json.Serialization
 open Skat.Game.State.Domain
+open Skat.Game.Types
 
 type PlayerCardListConverter() =
     inherit JsonConverter<(PlayerId * Card) list>()
@@ -129,6 +130,7 @@ let jsonOptions =
     |> fun options ->
         options.Converters.Add(PhaseConverter())
         options.Converters.Add(PositionConverter())
+        options.Converters.Add(PlayerCardListConverter())
         options.Converters.Add(JsonFSharpConverter()
         )
         options

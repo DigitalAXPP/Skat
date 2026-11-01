@@ -2,6 +2,7 @@ module Transport
 
 open SharedTypes
 open Skat.Game.Domain
+open Skat.Game.State.Bidding
 open Skat.Game.State.Domain
 
 type ServerMsgDto =
@@ -15,7 +16,7 @@ type ServerMsgDto =
     | SetParticipant of player : string
     | ShareClientMessage of msg : string
     | BidPlaced of bid : BidEventDto
-    | BiddingStarted of seats: SeatAssignment * state: BiddingState * roomId : string
+    | BiddingStarted of seats: SeatAssignment * state: BiddingState * roomId : string * cardSetup : DealState
     | BidUpdate of BiddingState
     | BidPassed of roomId : string
 
@@ -43,7 +44,7 @@ let toDomainMsg serverMsg =
         Messages.BidPlaced bid
     | BidPassed roomId ->
         Messages.BidPassed roomId
-    | BiddingStarted (seats, state, roomId)->
-        Messages.StartBidding (seats, state, roomId)
+    | BiddingStarted (seats, state, roomId, cards)->
+        Messages.StartBidding (seats, state, roomId, cards)
     | BidUpdate (state) ->
         Messages.BiddingUpdate (state)

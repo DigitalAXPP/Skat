@@ -6,13 +6,14 @@ open Fabulous
 open SharedTypes
 open Skat.Game.Types
 open Skat.Game.Functions
+open Skat.Game.State.Domain
 open SignalRClient
 
 type Model = {
     RoomId: string
     Game: GameType
     CardValue: int
-    CardSelected: (PlayerId * Card) list option
+    CardSelected: (int * Card) list option
     SelectedCard: Card option
     Hand: Card list option
     PlayerOne: PlayerConfig
@@ -26,9 +27,9 @@ type Model = {
 type Msg =
     | NextHomePage
     | SetCards
-    | ToggleCards of (PlayerId * Card) list option
+    | ToggleCards of (int * Card) list option
     | CompareCards
-    | RemoveCard of (PlayerId * Card)
+    | RemoveCard of (int * Card)
     | WinningHand
     | TellAll of string
     | AddSelectedCard of Card

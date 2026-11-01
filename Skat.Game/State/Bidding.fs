@@ -1,7 +1,10 @@
 namespace Skat.Game.State
 
 open System.Collections.Concurrent
+open System.Collections.Generic
 open System.Linq
+open Skat.Game.Functions
+open Skat.Game.Types
 
 module Domain =
     type PlayerId = string
@@ -27,11 +30,11 @@ module Domain =
         | Bid of int
         | Pass
 
-    // let s = { Forehand = "Veru"; Middlehand = "Alex"; Rearhand = "Theo" }
-    // let d1 = { Bidder = "Alex"; Responder = "Veru"; CurrentValue = None }
+    let s = { Forehand = "Veru"; Middlehand = "Alex"; Rearhand = "Theo" }
+    let d1 = { Bidder = "Alex"; Responder = "Veru"; CurrentValue = None }
     // let d2 = { Bidder = "Alex"; Responder = "Veru"; CurrentValue = Some 18 }
     //
-    // let b = InDuel (d1,MiddlehandVSForehand)
+    let b = InDuel (d1,MiddlehandVSForehand)
     // let b2 = InDuel (d2,MiddlehandVSForehand)    
     // let m = test s b "Alex" // Alex passes
     // let m2 = test s b2 "Alex" // Alex passes
@@ -47,6 +50,11 @@ open Domain
 
 module Bidding =
     
+    type Hand = Card list
+    type DealState = {
+        Hands : Map<PlayerId, Card list>
+        Skat : Card list
+    }
     let playersPassed = ConcurrentDictionary<PlayerId, unit>()
     let tryAddPlayers (player : string) =
         match playersPassed.TryAdd(player, ()) with
@@ -130,6 +138,7 @@ module Bidding =
     type GameSessionStore() =
         let sessions = ConcurrentDictionary<string, GameSession>()
         let seats = ConcurrentDictionary<string, string list>()
+        let games = ConcurrentDictionary<string, DealState>() 
         
         member _.AddPlayer(roomId: string, player: PlayerId) =
             match seats.TryAdd(roomId, [player]) with
@@ -138,10 +147,12 @@ module Bidding =
                 match seats.TryGetValue(roomId) with
                 | true, seat -> seats.TryUpdate(roomId, List.append seat [player], seat)
                 | false, _ -> false
+                
         member _.GetPlayer(roomId: string) =
             match seats.TryGetValue(roomId) with
             | true, seat -> Some seat
             | false, _ -> None
+            
         member _.AssignSeats(players : string list) =
             match List.length players with
             | x when x = 3 -> Some {Forehand = players.[0]; Middlehand = players.[1]; Rearhand = players.[2]}
@@ -159,3 +170,20 @@ module Bidding =
             
         member _.UpdateSession(roomId: string, newBid: BiddingState) =
             sessions.[roomId] <- { sessions.[roomId] with Bidding = newBid }
+            
+        member _.AssignCards(roomId : string) =
+            let shuffled = shuffleDeck Deck
+            let foreHand, rest = List.splitAt 10 shuffled
+            let middleHand, rest2 = List.splitAt 10 rest
+            let rearHand , skat = List.splitAt 10 rest2
+            let setup = { Hands = Map.empty
+                            .Add(sessions.[roomId].Seats.Forehand, foreHand)
+                            .Add(sessions.[roomId].Seats.Middlehand, middleHand)
+                            .Add(sessions.[roomId].Seats.Rearhand, rearHand)
+                            ; Skat = skat }
+            games.TryAdd(roomId, setup)
+            
+        member _.GetCards(roomId : string) =
+            match games.TryGetValue(roomId) with
+            | true, game -> Some game
+            | false, _ -> None

@@ -11,6 +11,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Skat.Game", "Skat.Game\Skat
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Skat.Auth", "Skat.Auth\Skat.Auth.fsproj", "{AF9F0E8E-C33E-4BFA-9EBC-8AB7688E8C10}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Skat.Tests", "Skat.Tests\Skat.Tests.fsproj", "{71D224C4-42EA-45AB-ABED-FE28DC112151}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,6 +73,18 @@ Global
 		{AF9F0E8E-C33E-4BFA-9EBC-8AB7688E8C10}.Release|x64.Build.0 = Release|Any CPU
 		{AF9F0E8E-C33E-4BFA-9EBC-8AB7688E8C10}.Release|x86.ActiveCfg = Release|Any CPU
 		{AF9F0E8E-C33E-4BFA-9EBC-8AB7688E8C10}.Release|x86.Build.0 = Release|Any CPU
+		{71D224C4-42EA-45AB-ABED-FE28DC112151}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{71D224C4-42EA-45AB-ABED-FE28DC112151}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{71D224C4-42EA-45AB-ABED-FE28DC112151}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{71D224C4-42EA-45AB-ABED-FE28DC112151}.Debug|x64.Build.0 = Debug|Any CPU
+		{71D224C4-42EA-45AB-ABED-FE28DC112151}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{71D224C4-42EA-45AB-ABED-FE28DC112151}.Debug|x86.Build.0 = Debug|Any CPU
+		{71D224C4-42EA-45AB-ABED-FE28DC112151}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{71D224C4-42EA-45AB-ABED-FE28DC112151}.Release|Any CPU.Build.0 = Release|Any CPU
+		{71D224C4-42EA-45AB-ABED-FE28DC112151}.Release|x64.ActiveCfg = Release|Any CPU
+		{71D224C4-42EA-45AB-ABED-FE28DC112151}.Release|x64.Build.0 = Release|Any CPU
+		{71D224C4-42EA-45AB-ABED-FE28DC112151}.Release|x86.ActiveCfg = Release|Any CPU
+		{71D224C4-42EA-45AB-ABED-FE28DC112151}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

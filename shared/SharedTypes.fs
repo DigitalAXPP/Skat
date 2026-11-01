@@ -131,11 +131,7 @@ type BidEventDto = {
     BidStep: string     // "Bid" | "Pass" | "Accept" | "BidWon"
 }
 
-type CardPlayedDto = {
-    PlayerId: string
-    Card: string
-    TrickId: int
-}
+type CardPlayedDto = (PlayerId * Card) list
 
 let getImageUri (imageName : string) =
     // Return the URI string for the embedded image resource

@@ -35,7 +35,7 @@ module Types =
             for rank in allRanks do
                 yield { Rank = rank ; Suite = suite } ]
 
-    type PlayerId = int
+    // type PlayerId = int
 
     type SkatPosition =
         | Geben
@@ -43,7 +43,7 @@ module Types =
         | Sagen
 
     type Action =
-        | Bid
+        | Bidd
         | Reject
         | Undecided
 
@@ -55,12 +55,12 @@ module Types =
     let normalRankOrder = [Seven; Eight; Nine; Dame; King; Ten; Ace]
 
     type PlayerConfig = {
-        Player: PlayerId
+        Player: int
         Activity: Action
         Amount: int option
         Position: SkatPosition
         StartingHand: Card list
-        HandsWon: (PlayerId * Card) list option
+        HandsWon: (int * Card) list option
     }
 
     let firstPlayer = {
@@ -150,7 +150,7 @@ module Functions =
         | _ ->
             List.findIndex ((=) card.Rank) normalRankOrder
 
-    let winningHand (game: GameType) (hands: (PlayerId * Card) list) =
+    let winningHand (game: GameType) (hands: (int * Card) list) =
         hands
         |> List.map (fun (a,b) -> (a,b, (cardStrength game b)))
         |> List.maxBy (fun (_, _, v) -> v)

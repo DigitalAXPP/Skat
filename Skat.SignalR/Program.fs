@@ -102,8 +102,10 @@ type GameHub (
                             | Some seats ->
                                 let duel = { Bidder = seats.Middlehand; Responder = seats.Forehand; CurrentValue = Some 18.0 }
                                 sessionStore.StartSession(roomId, seats, duel) |> ignore
+                                sessionStore.AssignCards(roomId)
+                                let cards = sessionStore.GetCards(roomId)
                                 do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{seats}/{duel}.")
-                                do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.BiddingStarted (seats, InDuel (duel, MiddlehandVSForehand), roomId))
+                                do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.BiddingStarted (seats, InDuel (duel, MiddlehandVSForehand), roomId, cards.Value))
                             | None -> ()
                         | Some players when List.length players < 3 ->
                             do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{userId}/{players}.")
@@ -202,7 +204,7 @@ type GameHub (
                     do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{message}.")
                     
                 | "CARD_PLAYED" ->
-                    let card = JsonSerializer.Deserialize<CardPlayedDto>(r)
+                    let card = JsonSerializer.Deserialize<CardPlayedDto>(r, jsonOptions)
                     do! this.Clients.Group(roomId).SendAsync("CardPlayed", card)
                 
                 | _ ->
