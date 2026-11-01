@@ -4,13 +4,32 @@ open System.Text.Json
 open System.Text.Json.Serialization
 open Skat.Game.State.Domain
 
+type PlayerCardListConverter() =
+    inherit JsonConverter<(PlayerId * Card) list>()
 
-// let jsonOptions =
-//     JsonSerializerOptions()
-//     |> fun options ->
-//         options.Converters.Add(JsonFSharpConverter()
-//         )
-//         options
+    override _.Read(reader: byref<Utf8JsonReader>, _typeToConvert, options) =
+        if reader.TokenType <> JsonTokenType.StartArray then
+            raise (JsonException "Expected a JSON array")
+
+        use doc = JsonDocument.ParseValue(&reader)
+
+        doc.RootElement.EnumerateArray()
+        |> Seq.map (fun pair ->
+            if pair.GetArrayLength() <> 2 then
+                raise (JsonException "Expected [playerId, card]")
+            let player = pair[0].Deserialize<PlayerId>(options)
+            let card = pair[1].Deserialize<Card>(options)
+            player, card)
+        |> List.ofSeq
+
+    override _.Write(writer, value, options) =
+        writer.WriteStartArray()
+        for (player, card) in value do
+            writer.WriteStartArray()
+            JsonSerializer.Serialize(writer, player, options)
+            JsonSerializer.Serialize(writer, card, options)
+            writer.WriteEndArray()
+        writer.WriteEndArray()
         
 type PositionConverter() =
     inherit JsonConverter<position>()
