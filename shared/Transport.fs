@@ -12,7 +12,7 @@ type ServerMsgDto =
     | GetGameRoooms of rooms : GameRoom list
     | NewGameEvent of roomid : string
     | NewEvent of roomId : string * userId : string * event : EventType * message : string
-    | CardSelected of card : string
+    | CardSelected of cards : CardPlayedDto
     | SetParticipant of player : string
     | ShareClientMessage of msg : string
     | BidPlaced of bid : BidEventDto

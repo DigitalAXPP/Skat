@@ -22,7 +22,7 @@ type DomainMsg =
     | GameRoomsReceived of GameRoom list
     | NewGameEvent of roomId : string
     | NewEvent of roomId : string * userId : string * event :EventType * message : string
-    | CardSelected of string
+    | CardSelected of cards : CardPlayedDto
     | SetParticipant of player : string
     | BidPlaced of bid : BidEventDto
     | BidPassed of roomId : string

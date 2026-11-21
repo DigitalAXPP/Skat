@@ -31,7 +31,7 @@ type Model =
         Seats : SeatAssignment
         Duel : Duel option
         Setup : DealState
-        CardSelection : (PlayerId * Card) list option  
+        CardSelection : (PlayerId * Card) list option
     }
 
 type Msg =
@@ -39,6 +39,7 @@ type Msg =
     | ChangeUserId of string
     | ChangeHighestBidder of string
     | ChangeBid of string
+    | UpdateCardSelection of cards : (PlayerId * Card) list option
     | SetBid of float
     | DeclineBid
     | RequestBid of int
@@ -76,6 +77,7 @@ let update msg model =
     | ChangeUserId id -> { model with Me = id }, Cmd.none, NoIntent
     | ChangeHighestBidder id -> { model with HighestBidder = id }, Cmd.none, NoIntent
     | ChangeBid bid -> { model with Bid = Some (float bid) }, Cmd.none, NoIntent
+    | UpdateCardSelection cards -> { model with CardSelection = cards }, Cmd.none, NoIntent
     | RequestBid bid -> model, Cmd.none, SendDecision (model.RoomId, model.Me.ToUpper(), Bid bid)
     | SetBid bid ->
         let message = {
@@ -105,7 +107,7 @@ let update msg model =
                 else
                     Some (s @ [ (id, c) ])
         let newModel = { model with CardSelection = newList }
-        let json = match newModel.CardSelection with
+        let json = match newList with
                     | Some s -> JsonSerializer.Serialize(s, jsonOptions)
                     | None -> "[]"
         newModel, Cmd.none, NewGameEvent (model.RoomId, model.Me.ToUpper(), CardPlayed, json)

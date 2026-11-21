@@ -203,8 +203,9 @@ type GameHub (
                     do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.BidPassed(roomId))
                     do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.ShareClientMessage $"{message}.")
                     
-                | "CARD_PLAYED" ->
+                | "CardPlayed" ->
                     let card = JsonSerializer.Deserialize<CardPlayedDto>(r, jsonOptions)
+                    do! this.Clients.Group(roomId).SendAsync("ServerMsg", ServerMsgDto.CardSelected card)
                     do! this.Clients.Group(roomId).SendAsync("CardPlayed", card)
                 
                 | _ ->

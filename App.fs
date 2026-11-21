@@ -483,9 +483,15 @@ module App =
                     Cmd.ofMsg (GameMsg (GamePage.InsertRoomId roomId))
                 ]
             | Messages.CardSelected card ->
-                printfn "Received card selected: %s" card
+                printfn "Received cards selected: %A" card
+                let selection =
+                    match card with
+                    | [] -> None
+                    | _ -> Some card
                 // Handle card selected if needed
-                model, Cmd.none
+                model, Cmd.batch [
+                    Cmd.ofMsg (ReizenMsg (ReizenPage.UpdateCardSelection selection))
+                ]
             | Messages.SetParticipant player ->
                 printfn "Received set participant: %s" player
                 // Handle set participant if needed
